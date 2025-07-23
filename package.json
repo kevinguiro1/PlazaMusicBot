@@ -1,28 +1,14 @@
 {
-  "name": "MusicaPlaza",
-<<<<<<< HEAD
-  "type": "module",
-=======
->>>>>>> 84a385d6b0d79fb67219396c133b027284bf6756
+  "name": "plazamusicbot",
   "version": "1.0.0",
+  "description": "Bot musical para Plaza",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "@whiskeysockets/baileys": "^6.7.18",
-    "axios": "^1.6.7",
-    "dotenv": "^16.6.1",
-    "pino": "^8.12.0",
-    "qrcode-terminal": "^0.12.0"
-=======
-    "@adiwajshing/keyed-db": "^0.2.4",
-    "@hapi/boom": "^10.0.1",
-    "axios": "^1.6.7",
-    "dotenv": "^16.3.1",
-    "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "^1.31.0"
->>>>>>> 84a385d6b0d79fb67219396c133b027284bf6756
+    "baileys": "^6.3.5",
+    "spotify-web-api-node": "^5.0.2",
+    "...": "..."
   }
 }
