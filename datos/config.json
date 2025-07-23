@@ -1,0 +1,10 @@
+{
+  "limite_normal": 1,
+  "limite_premium": 3,
+  "limite_vip": 5,
+  "validar_ubicacion": false,
+  "coordenadas_plaza": {
+    "lat": 26.9041,
+    "lon": -101.4208
+  }
+}

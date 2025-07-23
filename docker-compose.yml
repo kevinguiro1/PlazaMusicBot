@@ -1,0 +1,14 @@
+version: '3.3'
+services:
+  musica_bot:
+    build: .
+    container_name: musica_bot
+    environment:
+      - NODE_ENV=production
+      - SESSION=musica  # si usas whatsapp-web.js con persistencia de sesión
+    ports:
+      - "4040:4040"
+    volumes:
+      - ./session:/app/session      # persistencia QR/session data
+      - /opt/musica:/opt/musica    # monta la carpeta del proyecto en el contenedor
+    restart: unless-stopped

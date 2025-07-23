@@ -1,0 +1,33 @@
+.
+├── .env
+├── Dockerfile
+├── administrador
+│   └── index.js
+├── bot.js
+├── conexion
+│   ├── spotify.js
+│   └── whatsapp.js
+├── datos
+│   ├── bloqueados.json
+│   ├── config.json
+│   ├── solicitudes.json
+│   ├── spotify_tokens.json
+│   └── usuarios.json
+├── docker-compose.yml
+├── estructura_archivos.txt
+├── package-lock.json
+├── package.json
+├── session
+├── usuario
+│   ├── index.js
+│   └── verificaUsuario.js
+└── utils
+    ├── campaign.js
+    ├── config.js
+    ├── esHoy.js
+    ├── filtroLenguaje.js
+    ├── filtrosCanciones.js
+    ├── ubicacion.js
+    └── verificaUsuario.js
+
+6 directories, 24 files
