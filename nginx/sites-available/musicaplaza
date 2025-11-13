@@ -1,0 +1,225 @@
+# Configuración de NGINX para Panel de Música Plaza
+# Reverse proxy hacia Node.js (Express) en puerto 3000
+
+# Upstream - Conexión al servidor Node.js
+upstream nodejs_backend {
+    server 127.0.0.1:3000 fail_timeout=10s max_fails=3;
+    keepalive 32;
+}
+
+# Redirigir HTTP a HTTPS (descomenta para producción con SSL)
+# server {
+#     listen 80;
+#     listen [::]:80;
+#     server_name musicaplaza.local;
+#     return 301 https://$server_name$request_uri;
+# }
+
+# Servidor HTTP (desarrollo)
+server {
+    listen 80;
+    listen [::]:80;
+    server_name musicaplaza.local localhost;
+
+    # Logs
+    access_log /var/log/nginx/musicaplaza_access.log;
+    error_log /var/log/nginx/musicaplaza_error.log;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+
+    # Root directory para archivos estáticos
+    root /home/user/PlazaMusicBot/panel/public;
+    index index.html;
+
+    # Tamaño máximo de body (para subir archivos si es necesario)
+    client_max_body_size 10M;
+
+    # Archivos estáticos con caché
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # Proxy a API del panel
+    location /api/ {
+        limit_req zone=api_limit burst=20 nodelay;
+        limit_conn conn_limit 10;
+
+        proxy_pass http://nodejs_backend;
+        proxy_http_version 1.1;
+
+        # Headers necesarios para reverse proxy
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $server_name;
+
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+
+        # Deshabilitar buffering para respuestas en tiempo real
+        proxy_buffering off;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Página principal y rutas SPA
+    location / {
+        limit_req zone=general_limit burst=50 nodelay;
+
+        try_files $uri $uri/ /index.html;
+
+        # Proxy a Node.js si el archivo no existe
+        proxy_pass http://nodejs_backend;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Healthcheck endpoint
+    location /health {
+        access_log off;
+        return 200 "OK\n";
+        add_header Content-Type text/plain;
+    }
+
+    # Denegar acceso a archivos ocultos
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Denegar acceso a archivos de configuración
+    location ~ \.(env|json|md)$ {
+        deny all;
+    }
+}
+
+# Servidor HTTPS (producción con SSL)
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name musicaplaza.local;
+
+    # Certificados SSL (Let's Encrypt)
+    # Genera con: certbot --nginx -d tu-dominio.com
+    ssl_certificate /etc/letsencrypt/live/musicaplaza.local/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/musicaplaza.local/privkey.pem;
+
+    # O usa certificados autofirmados para desarrollo
+    # ssl_certificate /home/user/PlazaMusicBot/nginx/ssl/cert.pem;
+    # ssl_certificate_key /home/user/PlazaMusicBot/nginx/ssl/key.pem;
+
+    # SSL optimizations
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # Logs
+    access_log /var/log/nginx/musicaplaza_ssl_access.log;
+    error_log /var/log/nginx/musicaplaza_ssl_error.log;
+
+    # Security headers (más estrictos con HTTPS)
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://maps.googleapis.com;" always;
+
+    # Root directory
+    root /home/user/PlazaMusicBot/panel/public;
+    index index.html;
+
+    # Client settings
+    client_max_body_size 10M;
+
+    # Archivos estáticos con caché
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # Proxy a API
+    location /api/ {
+        limit_req zone=api_limit burst=20 nodelay;
+        limit_conn conn_limit 10;
+
+        proxy_pass http://nodejs_backend;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $server_name;
+
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+
+        proxy_buffering off;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Página principal
+    location / {
+        limit_req zone=general_limit burst=50 nodelay;
+
+        try_files $uri $uri/ /index.html;
+
+        proxy_pass http://nodejs_backend;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Healthcheck
+    location /health {
+        access_log off;
+        return 200 "OK\n";
+        add_header Content-Type text/plain;
+    }
+
+    # Denegar archivos ocultos y de configuración
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~ \.(env|json|md)$ {
+        deny all;
+    }
+}

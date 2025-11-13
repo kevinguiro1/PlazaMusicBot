@@ -1,24 +1,72 @@
-// utils/ubicacion.js
-export default function verificarUbicacion(lat, long) {
-  // Coordenadas del centro de plaza (ejemplo)
-  const latPlaza = 25.4200;
-  const longPlaza = -101.0000;
-  const radioMetros = 200;
+// utils/ubicacion.js - Verificación de Ubicación
+import { log } from './logger.js';
 
-  function toRad(x) {
-    return x * Math.PI / 180;
+// Coordenadas de la plaza (desde .env)
+const PLAZA_LAT = parseFloat(process.env.PLAZA_LAT) || 23.2494;
+const PLAZA_LON = parseFloat(process.env.PLAZA_LON) || -106.4111;
+const PLAZA_RADIUS_KM = parseFloat(process.env.PLAZA_RADIUS_KM) || 0.5;
+
+/**
+ * Verificar si una ubicación está dentro del rango de la plaza
+ */
+export function verificarUbicacion(ubicacion) {
+  if (!ubicacion || !ubicacion.latitude || !ubicacion.longitude) {
+    log('⚠️ Ubicación inválida recibida', 'warn');
+    return false;
   }
 
-  const R = 6378137; // radio Tierra en metros
-  const dLat = toRad(lat - latPlaza);
-  const dLong = toRad(long - longPlaza);
+  const distancia = calcularDistancia(
+    PLAZA_LAT,
+    PLAZA_LON,
+    ubicacion.latitude,
+    ubicacion.longitude
+  );
 
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(toRad(latPlaza)) * Math.cos(toRad(lat)) *
-            Math.sin(dLong/2) * Math.sin(dLong/2);
+  const esValida = distancia <= PLAZA_RADIUS_KM;
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const d = R * c;
+  log(
+    `📍 Verificación de ubicación: ${distancia.toFixed(3)}km - ${esValida ? 'ACEPTADA' : 'RECHAZADA'}`,
+    esValida ? 'debug' : 'warn'
+  );
 
-  return d <= radioMetros;
+  return esValida;
+}
+
+/**
+ * Calcular distancia entre dos coordenadas (fórmula de Haversine)
+ */
+function calcularDistancia(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radio de la Tierra en km
+  const dLat = gradosARadianes(lat2 - lat1);
+  const dLon = gradosARadianes(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(gradosARadianes(lat1)) *
+      Math.cos(gradosARadianes(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distancia = R * c;
+
+  return distancia;
+}
+
+/**
+ * Convertir grados a radianes
+ */
+function gradosARadianes(grados) {
+  return grados * (Math.PI / 180);
+}
+
+/**
+ * Obtener información de la plaza configurada
+ */
+export function obtenerInfoPlaza() {
+  return {
+    latitud: PLAZA_LAT,
+    longitud: PLAZA_LON,
+    radioKm: PLAZA_RADIUS_KM
+  };
 }
