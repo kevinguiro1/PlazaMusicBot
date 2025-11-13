@@ -24,29 +24,35 @@ export const CONFIG_PERFILES = {
     puedeVerCola: false,
     puedeVerEstadisticas: false,
     requiereUbicacion: true,
+    validarUbicacion: true, // Debe estar en la plaza
     cooldownMinutos: 60,
+    costo: 0, // Gratis
     permisos: ['pedir_cancion', 'ver_menu']
   },
   [PERFILES.PREMIUM]: {
     nombre: 'Usuario Premium',
     emoji: '⭐',
-    limiteCanciones: parseInt(process.env.LIMITE_CANCIONES_PREMIUM) || 10,
+    limiteCanciones: parseInt(process.env.LIMITE_CANCIONES_PREMIUM) || 3,
     prioridad: 2,
     puedeVerCola: true,
     puedeVerEstadisticas: false,
     requiereUbicacion: true,
+    validarUbicacion: true, // Debe estar en la plaza
     cooldownMinutos: 30,
+    costo: 10, // 10 pesos por 3 canciones
     permisos: ['pedir_cancion', 'ver_menu', 'ver_cola', 'sugerir_artista']
   },
   [PERFILES.VIP]: {
     nombre: 'Usuario VIP',
     emoji: '💎',
-    limiteCanciones: parseInt(process.env.LIMITE_CANCIONES_VIP) || 999,
+    limiteCanciones: parseInt(process.env.LIMITE_CANCIONES_VIP) || 1,
     prioridad: 3,
     puedeVerCola: true,
     puedeVerEstadisticas: true,
-    requiereUbicacion: false,
+    requiereUbicacion: true, // Siempre pide ubicación
+    validarUbicacion: false, // Pero no valida que esté en la plaza
     cooldownMinutos: 0,
+    costo: 100, // 100 pesos por 1 canción
     permisos: ['pedir_cancion', 'ver_menu', 'ver_cola', 'sugerir_artista', 'ver_estadisticas', 'prioridad_alta']
   },
   [PERFILES.TECNICO]: {
@@ -69,7 +75,7 @@ export const CONFIG_PERFILES = {
       'prioridad_maxima'
     ]
   },
-  [PERFILES.ADMINISTRADORISTRADOR]: {
+  [PERFILES.ADMINISTRADOR]: {
     nombre: 'Administrador',
     emoji: '👑',
     limiteCanciones: 999,
