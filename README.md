@@ -18,7 +18,7 @@ Bot de música inteligente para WhatsApp con integración de Spotify, sistema de
 
 ### 🎯 Funcionalidades Principales
 
-- **Sistema de Perfiles Multinivel**: FREE, PREMIUM, VIP, DJ, ADMIN, SUPER_ADMIN
+- **Sistema de Perfiles Multinivel**: Normal, Premium, VIP, Técnico, Administrador
 - **Búsqueda Inteligente de Música**: Búsqueda por canción o artista con filtros de contenido
 - **Integración Completa con Spotify**: Gestión de playlist, cola de reproducción, estadísticas
 - **Sistema de Seguridad Avanzado**:
@@ -39,16 +39,16 @@ Bot de música inteligente para WhatsApp con integración de Spotify, sistema de
 
 Cada perfil tiene un menú adaptado a sus permisos:
 
-- **FREE**: Búsqueda básica, límite de 3 canciones/día
+- **Normal**: Búsqueda básica, límite de 3 canciones/día
 - **PREMIUM**: Búsqueda avanzada, ver cola, 10 canciones/día
 - **VIP**: Sin límites, estadísticas, prioridad en cola
-- **DJ**: Control total de playlist, gestión de cola
-- **ADMIN**: Gestión de usuarios, estadísticas, broadcasts
-- **SUPER_ADMIN**: Control total del sistema
+- **Técnico**: Control total de playlist, gestión de cola
+- **Administrador**: Gestión de usuarios, estadísticas, broadcasts
+- **SUPER_Administrador**: Control total del sistema
 
 ## 👥 Perfiles de Usuario
 
-### 🎵 FREE
+### 🎵 NORMAL
 - Límite: 3 canciones por día
 - Cooldown: 60 minutos
 - Requiere verificación de ubicación
@@ -68,7 +68,7 @@ Cada perfil tiene un menú adaptado a sus permisos:
 - Estadísticas personales
 - No requiere ubicación
 
-### 🎧 DJ
+### 🔧 TÉCNICO
 - Control total de música
 - Gestión de cola de reproducción
 - Eliminar y reordenar canciones
@@ -76,7 +76,7 @@ Cada perfil tiene un menú adaptado a sus permisos:
 - Agregar canciones prioritarias
 - Limpiar playlist
 
-### 👤 ADMIN
+### 👑 ADMINISTRADOR
 - Todas las funciones de DJ
 - Gestión de usuarios:
   - Bloquear/desbloquear
@@ -86,7 +86,7 @@ Cada perfil tiene un menú adaptado a sus permisos:
 - Ver estadísticas generales
 - Limpiar datos antiguos
 
-### 👑 SUPER_ADMIN
+
 - Control total del sistema
 - Gestión de administradores
 - Gestión de múltiples bots
@@ -149,10 +149,10 @@ SPOTIFY_PLAYLIST_ID=your_playlist_id
 
 # Administradores (separados por comas)
 ADMIN_NUMBERS=5218661165921,5218882223344
-SUPER_ADMIN_NUMBERS=5218661165921
+TECNICO_NUMBERS=5218661165921
 
 # Límites de Canciones
-LIMITE_CANCIONES_FREE=3
+LIMITE_CANCIONES_NORMAL=3
 LIMITE_CANCIONES_PREMIUM=10
 LIMITE_CANCIONES_VIP=999
 
@@ -289,7 +289,7 @@ PlazaMusicBot/
 ├── perfiles/                   # Manejadores de perfiles
 │   ├── usuario.js              # Free, Premium, VIP
 │   ├── dj.js                   # DJ
-│   └── admin.js                # Admin, Super Admin
+│   └── admin.js                # Admin, Administrador
 ├── utils/                      # Utilidades
 │   ├── logger.js               # Sistema de logging
 │   ├── filtrosCanciones.js     # Filtro de contenido
@@ -401,7 +401,7 @@ No puedes pedir la misma canción dos veces el mismo día.
 
 ### ¿Cómo me convierto en DJ o Admin?
 
-Solo los Super Administradores pueden promover a estos perfiles. Contacta al administrador principal.
+Solo los Administradores pueden promover a estos perfiles. Contacta al administrador principal.
 
 ## 🛠️ Desarrollo
 
