@@ -1,0 +1,270 @@
+// core/menus.js - Sistema de Menús Interactivos por Perfil
+import { PERFILES, obtenerPerfil, obtenerResumenPerfil } from './profiles.js';
+
+/**
+ * Menú principal según perfil de usuario
+ */
+export function obtenerMenuPrincipal(usuario) {
+  const perfil = obtenerPerfil(usuario);
+  const resumen = obtenerResumenPerfil(usuario);
+
+  let menu = `━━━━━━━━━━━━━━━━━━━━━\n`;
+  menu += `${perfil.emoji} *MÚSICA PLAZA* ${perfil.emoji}\n`;
+  menu += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  menu += `${resumen}\n\n`;
+  menu += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  menu += `📋 *MENÚ PRINCIPAL*\n`;
+  menu += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  // Opciones básicas para todos
+  menu += `1️⃣ 🎵 Pedir canción\n`;
+  menu += `2️⃣ 🎤 Buscar por artista\n`;
+
+  // Opciones premium+
+  if (perfil.puedeVerCola) {
+    menu += `3️⃣ 📜 Ver cola de reproducción\n`;
+  }
+
+  // Opciones VIP+
+  if (perfil.puedeVerEstadisticas) {
+    menu += `4️⃣ 📊 Ver estadísticas\n`;
+    menu += `5️⃣ 👤 Mi perfil\n`;
+  }
+
+  // Opciones DJ
+  if (usuario.perfil === PERFILES.DJ) {
+    menu += `6️⃣ 🎧 Panel DJ\n`;
+  }
+
+  // Opciones Admin
+  if (usuario.perfil === PERFILES.ADMIN || usuario.perfil === PERFILES.SUPER_ADMIN) {
+    menu += `9️⃣ 👤 Panel Admin\n`;
+  }
+
+  menu += `\n0️⃣ ❌ Salir\n`;
+  menu += `❓ ℹ️ Ayuda\n\n`;
+  menu += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  menu += `💡 Escribe el número de opción`;
+
+  return menu;
+}
+
+/**
+ * Menú de búsqueda de canciones
+ */
+export function obtenerMenuBusqueda() {
+  return `🔍 *BÚSQUEDA DE CANCIONES*\n\n` +
+         `Escribe el nombre de la canción que deseas buscar.\n\n` +
+         `💡 Ejemplos:\n` +
+         `• "Bohemian Rhapsody"\n` +
+         `• "Shape of You Ed Sheeran"\n` +
+         `• "Despacito"\n\n` +
+         `📝 Escribe el nombre o escribe "0" para volver al menú principal.`;
+}
+
+/**
+ * Menú de búsqueda por artista
+ */
+export function obtenerMenuArtista() {
+  return `🎤 *BÚSQUEDA POR ARTISTA*\n\n` +
+         `Escribe el nombre del artista que te interesa.\n\n` +
+         `💡 Ejemplos:\n` +
+         `• "Queen"\n` +
+         `• "Ed Sheeran"\n` +
+         `• "Bad Bunny"\n\n` +
+         `📝 Escribe el nombre o "0" para volver.`;
+}
+
+/**
+ * Menú de resultados de búsqueda
+ */
+export function obtenerMenuResultados(canciones, usuario) {
+  const perfil = obtenerPerfil(usuario);
+
+  let menu = `🎵 *RESULTADOS DE BÚSQUEDA*\n\n`;
+
+  canciones.forEach((cancion, index) => {
+    const artistas = cancion.artists.map(a => a.name).join(', ');
+    const duracion = formatearDuracion(cancion.duration_ms);
+    menu += `${index + 1}️⃣ *${cancion.name}*\n`;
+    menu += `   🎤 ${artistas}\n`;
+    menu += `   ⏱️ ${duracion}\n\n`;
+  });
+
+  menu += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  menu += `📝 Escribe el número (1-${canciones.length}) para seleccionar\n`;
+  menu += `0️⃣ Volver al menú\n`;
+  menu += `🔄 "nueva" para nueva búsqueda`;
+
+  return menu;
+}
+
+/**
+ * Menú del panel DJ
+ */
+export function obtenerMenuDJ() {
+  return `🎧 *PANEL DE DJ*\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n` +
+         `1️⃣ 📜 Ver cola completa\n` +
+         `2️⃣ ⏭️ Saltar canción actual\n` +
+         `3️⃣ 🗑️ Eliminar canción de cola\n` +
+         `4️⃣ 🔄 Reordenar cola\n` +
+         `5️⃣ 📊 Ver estadísticas en vivo\n` +
+         `6️⃣ 🎵 Agregar canción prioritaria\n` +
+         `7️⃣ 🧹 Limpiar playlist\n` +
+         `0️⃣ ⬅️ Volver\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n` +
+         `📝 Selecciona una opción`;
+}
+
+/**
+ * Menú del panel de administración
+ */
+export function obtenerMenuAdmin() {
+  return `👤 *PANEL DE ADMINISTRACIÓN*\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n` +
+         `*USUARIOS*\n` +
+         `1️⃣ 👥 Ver usuarios registrados\n` +
+         `2️⃣ 🚫 Bloquear usuario\n` +
+         `3️⃣ ✅ Desbloquear usuario\n` +
+         `4️⃣ ⭐ Promover usuario\n` +
+         `5️⃣ ⬇️ Degradar usuario\n\n` +
+         `*SISTEMA*\n` +
+         `6️⃣ 📊 Ver estadísticas generales\n` +
+         `7️⃣ 📜 Ver logs recientes\n` +
+         `8️⃣ 🔒 Ver usuarios bloqueados\n` +
+         `9️⃣ 🧹 Limpiar datos antiguos\n\n` +
+         `*COMUNICACIÓN*\n` +
+         `🔟 📢 Enviar mensaje masivo\n` +
+         `1️⃣1️⃣ 📣 Enviar anuncio\n\n` +
+         `0️⃣ ⬅️ Volver\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n` +
+         `📝 Selecciona una opción`;
+}
+
+/**
+ * Menú de ayuda según perfil
+ */
+export function obtenerMenuAyuda(usuario) {
+  const perfil = obtenerPerfil(usuario);
+
+  let ayuda = `ℹ️ *AYUDA - MÚSICA PLAZA*\n\n`;
+  ayuda += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  ayuda += `*TU PERFIL*\n`;
+  ayuda += `${perfil.emoji} ${perfil.nombre}\n`;
+  ayuda += `🎵 Límite diario: ${perfil.limiteCanciones} canciones\n`;
+  ayuda += `⏰ Cooldown: ${perfil.cooldownMinutos} minutos\n\n`;
+
+  ayuda += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  ayuda += `*CÓMO USAR EL BOT*\n\n`;
+
+  ayuda += `1️⃣ *Pedir canciones*\n`;
+  ayuda += `Escribe el nombre de la canción o usa el menú para buscar.\n\n`;
+
+  ayuda += `2️⃣ *Buscar por artista*\n`;
+  ayuda += `Explora las mejores canciones de tus artistas favoritos.\n\n`;
+
+  if (perfil.puedeVerCola) {
+    ayuda += `3️⃣ *Ver cola*\n`;
+    ayuda += `Mira qué canciones están en la lista de reproducción.\n\n`;
+  }
+
+  ayuda += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  ayuda += `*COMANDOS RÁPIDOS*\n\n`;
+  ayuda += `• "menu" - Volver al menú principal\n`;
+  ayuda += `• "perfil" - Ver tu perfil\n`;
+  ayuda += `• "ayuda" - Mostrar esta ayuda\n`;
+  ayuda += `• "salir" - Cerrar sesión\n\n`;
+
+  ayuda += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  ayuda += `*PERFILES DISPONIBLES*\n\n`;
+  ayuda += `🎵 FREE - 3 canciones/día\n`;
+  ayuda += `⭐ PREMIUM - 10 canciones/día\n`;
+  ayuda += `💎 VIP - Canciones ilimitadas\n`;
+  ayuda += `🎧 DJ - Control total de música\n\n`;
+
+  ayuda += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  ayuda += `💡 ¿Necesitas ayuda? Contacta a un administrador.`;
+
+  return ayuda;
+}
+
+/**
+ * Menú de FAQ
+ */
+export function obtenerMenuFAQ() {
+  return `❓ *PREGUNTAS FRECUENTES*\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+         `*¿Cómo pido una canción?*\n` +
+         `Simplemente escribe el nombre de la canción o usa el menú de búsqueda.\n\n` +
+         `*¿Cuántas canciones puedo pedir?*\n` +
+         `Depende de tu perfil:\n` +
+         `• FREE: 3 por día\n` +
+         `• PREMIUM: 10 por día\n` +
+         `• VIP: Ilimitadas\n\n` +
+         `*¿Cómo me hago Premium/VIP?*\n` +
+         `Contacta a un administrador para más información.\n\n` +
+         `*¿Por qué no encuentro una canción?*\n` +
+         `Algunas canciones pueden estar filtradas por contenido explícito o no estar disponibles en Spotify.\n\n` +
+         `*¿Cuánto tarda en sonar mi canción?*\n` +
+         `Depende de la cola actual. Los usuarios VIP tienen prioridad.\n\n` +
+         `*¿Puedo ver la cola de reproducción?*\n` +
+         `Sí, si eres PREMIUM o superior.\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n` +
+         `💡 Escribe "menu" para volver`;
+}
+
+/**
+ * Formatear duración de milisegundos a mm:ss
+ */
+function formatearDuracion(ms) {
+  const minutos = Math.floor(ms / 60000);
+  const segundos = Math.floor((ms % 60000) / 1000);
+  return `${minutos}:${segundos.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Mensaje de bienvenida
+ */
+export function obtenerMensajeBienvenida() {
+  return `🎵 *¡BIENVENIDO A MÚSICA PLAZA!* 🎵\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+         `Soy tu asistente musical para la plaza.\n` +
+         `Puedo ayudarte a:\n\n` +
+         `🎵 Pedir tus canciones favoritas\n` +
+         `🎤 Descubrir música de artistas\n` +
+         `📊 Ver estadísticas de reproducción\n` +
+         `💎 Y mucho más...\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+         `Para comenzar, por favor dime:\n` +
+         `*¿Cómo te llamas?*`;
+}
+
+/**
+ * Mensaje de solicitud de ubicación
+ */
+export function obtenerMensajeSolicitudUbicacion(nombre) {
+  return `¡Hola ${nombre}! 👋\n\n` +
+         `Para continuar, necesito verificar que estás en la plaza.\n\n` +
+         `📍 Por favor, envía tu ubicación en tiempo real.\n\n` +
+         `💡 En WhatsApp: 📎 → Ubicación → Ubicación en tiempo real`;
+}
+
+/**
+ * Mensaje de ubicación verificada
+ */
+export function obtenerMensajeUbicacionVerificada(nombre) {
+  return `✅ *¡Ubicación verificada!*\n\n` +
+         `¡Perfecto ${nombre}! Ya puedes empezar a pedir música.\n\n` +
+         `Escribe "menu" para ver todas las opciones disponibles.`;
+}
+
+/**
+ * Mensaje de ubicación rechazada
+ */
+export function obtenerMensajeUbicacionRechazada(nombre) {
+  return `❌ *Ubicación fuera de rango*\n\n` +
+         `Lo siento ${nombre}, parece que no estás en la plaza.\n\n` +
+         `Este bot solo funciona para personas que están físicamente en la plaza.\n\n` +
+         `📍 Acércate a la plaza e intenta nuevamente.`;
+}
