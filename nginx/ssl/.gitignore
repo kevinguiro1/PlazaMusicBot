@@ -1,0 +1,9 @@
+# No commitear certificados privados
+*.pem
+*.key
+*.crt
+*.csr
+
+# Permitir script
+!generate-self-signed-cert.sh
+!.gitignore
