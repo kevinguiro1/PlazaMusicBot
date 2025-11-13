@@ -1,5 +1,6 @@
 // core/menus.js - Sistema de Menús Interactivos por Perfil
 import { PERFILES, obtenerPerfil, obtenerResumenPerfil } from './profiles.js';
+import { obtenerSaludo } from '../utils/saludos.js';
 
 /**
  * Menú principal según perfil de usuario
@@ -227,7 +228,10 @@ function formatearDuracion(ms) {
  * Mensaje de bienvenida
  */
 export function obtenerMensajeBienvenida() {
-  return `🎵 *¡BIENVENIDO A MÚSICA PLAZA!* 🎵\n\n` +
+  const saludo = obtenerSaludo();
+
+  return `${saludo}! 🎵\n\n` +
+         `*¡BIENVENIDO A MÚSICA PLAZA!*\n\n` +
          `━━━━━━━━━━━━━━━━━━━━━\n\n` +
          `Soy tu asistente musical para la plaza.\n` +
          `Puedo ayudarte a:\n\n` +
@@ -244,7 +248,9 @@ export function obtenerMensajeBienvenida() {
  * Mensaje de solicitud de ubicación
  */
 export function obtenerMensajeSolicitudUbicacion(nombre) {
-  return `¡Hola ${nombre}! 👋\n\n` +
+  const saludo = obtenerSaludo();
+
+  return `${saludo} ${nombre}! 👋\n\n` +
          `Para continuar, necesito verificar que estás en la plaza.\n\n` +
          `📍 Por favor, envía tu ubicación en tiempo real.\n\n` +
          `💡 En WhatsApp: 📎 → Ubicación → Ubicación en tiempo real`;

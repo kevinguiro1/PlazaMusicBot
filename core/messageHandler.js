@@ -4,6 +4,7 @@ import {
   esAdmin,
   esTecnico,
   PERFILES,
+  CONFIG_PERFILES,
   resetearContadorDiario,
   tienePermiso
 } from './profiles.js';
@@ -20,7 +21,7 @@ import { manejarUsuarioNormal } from '../perfiles/usuario.js';
 import { manejarAdministrador } from '../perfiles/admin.js';
 import { manejarTecnico } from '../perfiles/dj.js';
 import { verificarUbicacion } from '../utils/ubicacion.js';
-import { filtroLenguaje } from '../utils/filtroLenguaje.js';
+import { filtrarContenido, obtenerMensajeRechazo } from '../utils/filtroContenido.js';
 import { log } from '../utils/logger.js';
 
 /**
@@ -39,7 +40,17 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
     // Log del mensaje
     log(`📨 Mensaje de ${numero}: ${mensaje.substring(0, 50)}...`, 'debug');
 
-    // Verificar seguridad
+    // Validar tipo de mensaje (rechazar fotos, videos, audios, reenvíos, etc.)
+    const validacionTipo = sistemaSeguridad.validarTipoMensaje(m.message);
+    if (!validacionTipo.valido) {
+      if (validacionTipo.mensaje) {
+        await enviarMensaje(sock, m.key.remoteJid, validacionTipo.mensaje);
+      }
+      log(`🚫 Tipo de mensaje rechazado de ${numero}: ${validacionTipo.razon}`, 'warn');
+      return;
+    }
+
+    // Verificar seguridad (rate limit, flood, etc.)
     const seguridadCheck = sistemaSeguridad.verificarSeguridad(numero, mensaje);
     if (!seguridadCheck.permitido) {
       if (seguridadCheck.mensaje) {
@@ -71,19 +82,19 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
     if (!usuario.nombre) {
       usuario.nombre = mensaje.trim();
       const perfil = esAdmin(numero) ? PERFILES.ADMINISTRADOR :
-                     esTecnico(numero) ? PERFILES.ADMINISTRADOR :
+                     esTecnico(numero) ? PERFILES.TECNICO :
                      PERFILES.NORMAL;
 
       if (perfil !== PERFILES.NORMAL) {
         usuario.perfil = perfil;
-        const config = require('./profiles.js').CONFIG_PERFILES[perfil];
+        const config = CONFIG_PERFILES[perfil];
         usuario.limiteDiario = config.limiteCanciones;
         usuario.prioridad = config.prioridad;
         usuario.permisos = config.permisos;
       }
 
       // Si requiere ubicación, solicitarla
-      const configPerfil = require('./profiles.js').CONFIG_PERFILES[usuario.perfil];
+      const configPerfil = CONFIG_PERFILES[usuario.perfil];
       if (configPerfil.requiereUbicacion) {
         await enviarMensaje(sock, m.key.remoteJid, obtenerMensajeSolicitudUbicacion(usuario.nombre));
       } else {
@@ -97,22 +108,38 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
     // Verificar ubicación si es necesario
     if (!usuario.ubicacionVerificada) {
       if (tipoMensaje === 'ubicacion' && ubicacion) {
-        const esValida = verificarUbicacion({
-          latitude: ubicacion.degreesLatitude,
-          longitude: ubicacion.degreesLongitude
-        });
+        const configPerfil = CONFIG_PERFILES[usuario.perfil];
 
-        if (esValida) {
-          usuario.ubicacionVerificada = true;
-          usuario.ultimaUbicacion = {
-            lat: ubicacion.degreesLatitude,
-            lon: ubicacion.degreesLongitude,
-            fecha: new Date().toISOString()
-          };
-          await enviarMensaje(sock, m.key.remoteJid, obtenerMensajeUbicacionVerificada(usuario.nombre));
-          await enviarMensaje(sock, m.key.remoteJid, obtenerMenuPrincipal(usuario));
+        // Guardar ubicación siempre (para estadísticas)
+        usuario.ultimaUbicacion = {
+          lat: ubicacion.degreesLatitude,
+          lon: ubicacion.degreesLongitude,
+          fecha: new Date().toISOString()
+        };
+
+        // Solo validar si el perfil lo requiere (Normal, Premium, Técnico)
+        if (configPerfil.validarUbicacion) {
+          const esValida = verificarUbicacion({
+            latitude: ubicacion.degreesLatitude,
+            longitude: ubicacion.degreesLongitude
+          });
+
+          if (esValida) {
+            usuario.ubicacionVerificada = true;
+            await enviarMensaje(sock, m.key.remoteJid, obtenerMensajeUbicacionVerificada(usuario.nombre));
+            await enviarMensaje(sock, m.key.remoteJid, obtenerMenuPrincipal(usuario));
+          } else {
+            await enviarMensaje(sock, m.key.remoteJid, obtenerMensajeUbicacionRechazada(usuario.nombre));
+          }
         } else {
-          await enviarMensaje(sock, m.key.remoteJid, obtenerMensajeUbicacionRechazada(usuario.nombre));
+          // VIP: solo registrar ubicación sin validar plaza
+          usuario.ubicacionVerificada = true;
+          await enviarMensaje(
+            sock,
+            m.key.remoteJid,
+            `✅ ¡Ubicación registrada!\n\n${configPerfil.emoji} Bienvenido ${usuario.nombre}, acceso VIP concedido.`
+          );
+          await enviarMensaje(sock, m.key.remoteJid, obtenerMenuPrincipal(usuario));
         }
       } else {
         await enviarMensaje(sock, m.key.remoteJid, obtenerMensajeSolicitudUbicacion(usuario.nombre));
@@ -120,19 +147,44 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
       return;
     }
 
-    // Filtro de lenguaje ofensivo
-    if (filtroLenguaje(mensaje)) {
-      estado.bloqueados[numero] = {
+    // Filtro de contenido (lenguaje ofensivo, violencia, narco, etc.)
+    const filtrado = filtrarContenido(mensaje);
+    if (!filtrado.permitido) {
+      const mensajeRechazo = obtenerMensajeRechazo(filtrado);
+
+      // Registrar infracción
+      if (!estado.infracciones) {
+        estado.infracciones = {};
+      }
+      if (!estado.infracciones[numero]) {
+        estado.infracciones[numero] = [];
+      }
+
+      estado.infracciones[numero].push({
         fecha: new Date().toISOString(),
-        razon: 'lenguaje_ofensivo',
-        mensaje: mensaje
-      };
-      await enviarMensaje(
-        sock,
-        m.key.remoteJid,
-        `🚫 Has sido bloqueado por usar lenguaje inapropiado.\n\nContacta a un administrador si crees que es un error.`
-      );
-      log(`🚫 Usuario bloqueado por lenguaje ofensivo: ${numero}`, 'warn');
+        mensaje: mensaje,
+        categorias: filtrado.categoriasDetectadas.map(c => c.categoria),
+        severidad: filtrado.severidad,
+        accion: filtrado.accion
+      });
+
+      // Aplicar acción según severidad
+      if (filtrado.accion === 'bloqueo_permanente' || estado.infracciones[numero].length >= 3) {
+        // Bloqueo permanente
+        estado.bloqueados[numero] = {
+          fecha: new Date().toISOString(),
+          razon: 'contenido_prohibido',
+          categorias: filtrado.categoriasDetectadas.map(c => c.nombre),
+          infracciones: estado.infracciones[numero].length
+        };
+        log(`🚨 Usuario bloqueado permanentemente: ${numero} (${filtrado.severidad})`, 'warn');
+      } else if (filtrado.accion === 'bloqueo_temporal') {
+        // Bloqueo temporal (1 hora) - usando el sistema de seguridad
+        sistemaSeguridad.bloqueosTemporales?.set(numero, true);
+        log(`⏰ Usuario bloqueado temporalmente: ${numero} (${filtrado.severidad})`, 'warn');
+      }
+
+      await enviarMensaje(sock, m.key.remoteJid, mensajeRechazo);
       return;
     }
 

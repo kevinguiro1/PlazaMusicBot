@@ -179,6 +179,128 @@ app.get('/api/estadisticas', async (req, res) => {
 });
 
 /**
+ * API: Obtener palabras prohibidas
+ */
+app.get('/api/palabras-prohibidas', async (req, res) => {
+  try {
+    const { obtenerCategorias, obtenerEstadisticas } = await import('../utils/filtroContenido.js');
+    const categorias = obtenerCategorias();
+    const stats = obtenerEstadisticas();
+
+    res.json({
+      categorias,
+      estadisticas: stats
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * API: Agregar palabra prohibida
+ */
+app.post('/api/palabras-prohibidas/:categoria', async (req, res) => {
+  try {
+    const { categoria } = req.params;
+    const { palabra } = req.body;
+
+    if (!palabra || typeof palabra !== 'string') {
+      return res.status(400).json({ error: 'Palabra inválida' });
+    }
+
+    const { agregarPalabraProhibida } = await import('../utils/filtroContenido.js');
+    const agregada = agregarPalabraProhibida(categoria, palabra);
+
+    if (agregada) {
+      res.json({ success: true, message: `Palabra "${palabra}" agregada a ${categoria}` });
+    } else {
+      res.json({ success: false, message: 'La palabra ya existe en esta categoría' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * API: Eliminar palabra prohibida
+ */
+app.delete('/api/palabras-prohibidas/:categoria/:palabra', async (req, res) => {
+  try {
+    const { categoria, palabra } = req.params;
+
+    const { eliminarPalabraProhibida } = await import('../utils/filtroContenido.js');
+    const eliminada = eliminarPalabraProhibida(categoria, decodeURIComponent(palabra));
+
+    if (eliminada) {
+      res.json({ success: true, message: `Palabra "${palabra}" eliminada de ${categoria}` });
+    } else {
+      res.json({ success: false, message: 'La palabra no existe en esta categoría' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * API: Recargar palabras prohibidas
+ */
+app.post('/api/palabras-prohibidas/recargar', async (req, res) => {
+  try {
+    const { recargarPalabrasProhibidas } = await import('../utils/filtroContenido.js');
+    const palabras = recargarPalabrasProhibidas();
+
+    res.json({ success: true, message: 'Palabras prohibidas recargadas', palabras });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * API: Obtener infracciones de usuarios
+ */
+app.get('/api/infracciones', async (req, res) => {
+  try {
+    const estadoFile = path.join(DATA_DIR, 'estado.json');
+    const content = await fs.readFile(estadoFile, 'utf-8');
+    const estado = JSON.parse(content);
+
+    const infracciones = estado.infracciones || {};
+    const bloqueados = estado.bloqueados || {};
+
+    res.json({
+      infracciones,
+      bloqueados,
+      totalUsuariosConInfracciones: Object.keys(infracciones).length,
+      totalBloqueados: Object.keys(bloqueados).length
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * API: Desbloquear usuario
+ */
+app.post('/api/infracciones/:numero/desbloquear', async (req, res) => {
+  try {
+    const { numero } = req.params;
+    const estadoFile = path.join(DATA_DIR, 'estado.json');
+    const content = await fs.readFile(estadoFile, 'utf-8');
+    const estado = JSON.parse(content);
+
+    if (estado.bloqueados && estado.bloqueados[numero]) {
+      delete estado.bloqueados[numero];
+      await fs.writeFile(estadoFile, JSON.stringify(estado, null, 2));
+      res.json({ success: true, message: `Usuario ${numero} desbloqueado` });
+    } else {
+      res.status(404).json({ error: 'Usuario no está bloqueado' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * Helper: Actualizar valor en .env
  */
 function updateEnvValue(content, key, value) {

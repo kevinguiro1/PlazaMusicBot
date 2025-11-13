@@ -99,6 +99,90 @@ export function iniciarSistemaSeguridad() {
     },
 
     /**
+     * Validar tipo de mensaje (solo texto y ubicación permitidos)
+     */
+    validarTipoMensaje(mensajeObj) {
+      // Tipos de mensaje permitidos
+      const tiposPermitidos = ['conversation', 'extendedTextMessage', 'locationMessage'];
+
+      // Rechazar fotos
+      if (mensajeObj.imageMessage) {
+        log('🚫 Imagen rechazada', 'warn');
+        return {
+          valido: false,
+          razon: 'tipo_no_permitido',
+          mensaje: '📵 No se permiten imágenes. Solo texto y ubicación.'
+        };
+      }
+
+      // Rechazar videos
+      if (mensajeObj.videoMessage) {
+        log('🚫 Video rechazado', 'warn');
+        return {
+          valido: false,
+          razon: 'tipo_no_permitido',
+          mensaje: '📵 No se permiten videos. Solo texto y ubicación.'
+        };
+      }
+
+      // Rechazar audios
+      if (mensajeObj.audioMessage || mensajeObj.ptt) {
+        log('🚫 Audio rechazado', 'warn');
+        return {
+          valido: false,
+          razon: 'tipo_no_permitido',
+          mensaje: '📵 No se permiten audios. Solo texto y ubicación.'
+        };
+      }
+
+      // Rechazar documentos
+      if (mensajeObj.documentMessage) {
+        log('🚫 Documento rechazado', 'warn');
+        return {
+          valido: false,
+          razon: 'tipo_no_permitido',
+          mensaje: '📵 No se permiten documentos. Solo texto y ubicación.'
+        };
+      }
+
+      // Rechazar stickers
+      if (mensajeObj.stickerMessage) {
+        log('🚫 Sticker rechazado', 'warn');
+        return {
+          valido: false,
+          razon: 'tipo_no_permitido',
+          mensaje: '📵 No se permiten stickers. Solo texto y ubicación.'
+        };
+      }
+
+      // Rechazar mensajes reenviados
+      if (mensajeObj.extendedTextMessage?.contextInfo?.isForwarded) {
+        log('🚫 Mensaje reenviado rechazado', 'warn');
+        return {
+          valido: false,
+          razon: 'reenvio_no_permitido',
+          mensaje: '📵 No se permiten mensajes reenviados.'
+        };
+      }
+
+      // Rechazar contactos
+      if (mensajeObj.contactMessage || mensajeObj.contactsArrayMessage) {
+        log('🚫 Contacto rechazado', 'warn');
+        return {
+          valido: false,
+          razon: 'tipo_no_permitido',
+          mensaje: '📵 No se permiten contactos. Solo texto y ubicación.'
+        };
+      }
+
+      return {
+        valido: true,
+        razon: null,
+        mensaje: null
+      };
+    },
+
+    /**
      * Validar mensaje (sanitización básica)
      */
     validarMensaje(mensaje) {

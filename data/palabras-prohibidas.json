@@ -1,0 +1,235 @@
+{
+  "version": "1.0.0",
+  "ultimaActualizacion": "2025-01-13",
+  "descripcion": "Base de datos de palabras prohibidas por categoría para filtrado de contenido",
+  "configuracion": {
+    "listaNegra": {
+      "temporal": {
+        "duracionMinutos": 60,
+        "intentosPermitidos": 2
+      },
+      "permanente": {
+        "intentosParaBaneo": 3
+      }
+    },
+    "severidad": {
+      "bajo": 1,
+      "medio": 2,
+      "alto": 3,
+      "critico": 4
+    }
+  },
+  "categorias": {
+    "lenguaje_ofensivo": {
+      "nombre": "Lenguaje Ofensivo",
+      "descripcion": "Palabras obscenas y vulgares",
+      "severidad": "medio",
+      "accion": "advertencia",
+      "palabras": [
+        "puto",
+        "puta",
+        "pendejo",
+        "pendeja",
+        "cabron",
+        "cabrona",
+        "chingar",
+        "verga",
+        "pinche",
+        "joder",
+        "mierda",
+        "perra",
+        "perro",
+        "hijo de puta",
+        "hdp",
+        "idiota",
+        "imbecil",
+        "estupido",
+        "estupida",
+        "marica",
+        "maricon"
+      ]
+    },
+    "violencia": {
+      "nombre": "Contenido Violento",
+      "descripcion": "Referencias a violencia, armas y amenazas",
+      "severidad": "alto",
+      "accion": "bloqueo_temporal",
+      "palabras": [
+        "matar",
+        "asesinar",
+        "golpear",
+        "tortura",
+        "sangre",
+        "muerte",
+        "cadaver",
+        "muerto",
+        "disparo",
+        "balacera",
+        "ejecutar",
+        "ejecucion",
+        "sicario",
+        "asesino",
+        "violencia",
+        "secuestro",
+        "secuestrar",
+        "amenaza",
+        "amenazar",
+        "pistola",
+        "rifle",
+        "cuerno de chivo",
+        "ak47",
+        "ar15",
+        "cuete",
+        "fierro"
+      ]
+    },
+    "narcotrafico": {
+      "nombre": "Referencias al Narcotráfico",
+      "descripcion": "Términos relacionados con drogas y narcotráfico",
+      "severidad": "critico",
+      "accion": "bloqueo_permanente",
+      "palabras": [
+        "narco",
+        "narcos",
+        "cartel",
+        "chapo",
+        "sicario",
+        "plaza",
+        "levanton",
+        "cocaina",
+        "coca",
+        "mota",
+        "marihuana",
+        "crystal",
+        "fentanilo",
+        "heroina",
+        "droga",
+        "drogas",
+        "trafico",
+        "traficante",
+        "distribuir",
+        "jalar",
+        "perico",
+        "polvo",
+        "hierba",
+        "gallo",
+        "churro",
+        "cds",
+        "cjng",
+        "jalisco nueva generacion",
+        "sinaloa",
+        "zetas",
+        "beltran leyva",
+        "golfo",
+        "michoacana",
+        "templarios",
+        "guzmán",
+        "zambada",
+        "mencho"
+      ]
+    },
+    "contenido_sexual": {
+      "nombre": "Contenido Sexual Explícito",
+      "descripcion": "Referencias sexuales inapropiadas",
+      "severidad": "alto",
+      "accion": "bloqueo_temporal",
+      "palabras": [
+        "sexo",
+        "porno",
+        "pornografia",
+        "desnudo",
+        "desnuda",
+        "xxx",
+        "prostituta",
+        "prostituto",
+        "violacion",
+        "violar",
+        "masturbacion",
+        "masturbar",
+        "pene",
+        "vagina",
+        "tetas",
+        "culo",
+        "nalgas",
+        "chingar",
+        "coger",
+        "follar"
+      ]
+    },
+    "discriminacion": {
+      "nombre": "Discriminación y Odio",
+      "descripcion": "Lenguaje discriminatorio, racista, sexista u homofóbico",
+      "severidad": "critico",
+      "accion": "bloqueo_permanente",
+      "palabras": [
+        "racista",
+        "racismo",
+        "negro de mierda",
+        "pinche indio",
+        "joto",
+        "puto gay",
+        "tortillera",
+        "lesbiana de mierda",
+        "mujer pendeja",
+        "vieja estupida",
+        "feminazi",
+        "machista",
+        "machismo"
+      ]
+    },
+    "terror": {
+      "nombre": "Terrorismo y Extremismo",
+      "descripcion": "Referencias a actos terroristas o extremistas",
+      "severidad": "critico",
+      "accion": "bloqueo_permanente",
+      "palabras": [
+        "bomba",
+        "explosivo",
+        "explosión",
+        "atentado",
+        "terrorismo",
+        "terrorista",
+        "isis",
+        "al qaeda",
+        "yihad",
+        "martir"
+      ]
+    },
+    "spam_comercial": {
+      "nombre": "Spam Comercial",
+      "descripcion": "Publicidad no autorizada y spam",
+      "severidad": "bajo",
+      "accion": "advertencia",
+      "palabras": [
+        "compra ahora",
+        "oferta limitada",
+        "gana dinero facil",
+        "trabajo desde casa",
+        "multinivel",
+        "herbalife",
+        "amway",
+        "venta directa",
+        "descuento",
+        "promocion",
+        "clickea aqui",
+        "enlace en bio"
+      ]
+    }
+  },
+  "excepciones": {
+    "descripcion": "Palabras que pueden ser parte de títulos de canciones legítimos",
+    "palabras": [
+      "amor",
+      "corazon",
+      "beso",
+      "pasion",
+      "locura"
+    ]
+  },
+  "notas": [
+    "Este archivo puede ser editado desde el panel de administración web",
+    "Las palabras se evalúan sin acentos y en minúsculas",
+    "Se aplican sanciones progresivas según la severidad",
+    "Los administradores pueden agregar/eliminar palabras en tiempo real"
+  ]
+}
