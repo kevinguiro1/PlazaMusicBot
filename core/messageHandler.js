@@ -2,7 +2,7 @@
 import {
   crearUsuario,
   esAdmin,
-  esSuperAdmin,
+  esTecnico,
   PERFILES,
   resetearContadorDiario,
   tienePermiso
@@ -18,7 +18,7 @@ import {
 } from './menus.js';
 import { manejarUsuarioNormal } from '../perfiles/usuario.js';
 import { manejarAdministrador } from '../perfiles/admin.js';
-import { manejarDJ } from '../perfiles/dj.js';
+import { manejarTecnico } from '../perfiles/dj.js';
 import { verificarUbicacion } from '../utils/ubicacion.js';
 import { filtroLenguaje } from '../utils/filtroLenguaje.js';
 import { log } from '../utils/logger.js';
@@ -70,11 +70,11 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
     // Si no tiene nombre, guardarlo
     if (!usuario.nombre) {
       usuario.nombre = mensaje.trim();
-      const perfil = esAdmin(numero) ? PERFILES.ADMIN :
-                     esSuperAdmin(numero) ? PERFILES.SUPER_ADMIN :
-                     PERFILES.FREE;
+      const perfil = esAdmin(numero) ? PERFILES.ADMINISTRADOR :
+                     esTecnico(numero) ? PERFILES.ADMINISTRADOR :
+                     PERFILES.NORMAL;
 
-      if (perfil !== PERFILES.FREE) {
+      if (perfil !== PERFILES.NORMAL) {
         usuario.perfil = perfil;
         const config = require('./profiles.js').CONFIG_PERFILES[perfil];
         usuario.limiteDiario = config.limiteCanciones;
@@ -176,15 +176,15 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
     // Enrutar según perfil
     let respuesta;
 
-    if (usuario.perfil === PERFILES.ADMIN || usuario.perfil === PERFILES.SUPER_ADMIN) {
+    if (usuario.perfil === PERFILES.ADMINISTRADOR || usuario.perfil === PERFILES.ADMINISTRADOR) {
       // Admins tienen acceso a comandos de admin + funcionalidad normal
       if (mensaje.startsWith('/')) {
         respuesta = await manejarAdministrador(usuario, mensaje, estado);
       } else {
         respuesta = await manejarUsuarioNormal(usuario, mensaje, estado);
       }
-    } else if (usuario.perfil === PERFILES.DJ) {
-      respuesta = await manejarDJ(usuario, mensaje, estado);
+    } else if (usuario.perfil === PERFILES.TECNICO) {
+      respuesta = await manejarTecnico(usuario, mensaje, estado);
     } else {
       respuesta = await manejarUsuarioNormal(usuario, mensaje, estado);
     }

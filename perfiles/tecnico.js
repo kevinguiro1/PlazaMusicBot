@@ -1,4 +1,4 @@
-// perfiles/dj.js - Manejador del Perfil DJ
+// perfiles/tecnico.js - Manejador del Perfil Técnico
 import {
   obtenerPlaylist,
   eliminarCancionDePlaylist,
@@ -6,25 +6,25 @@ import {
   agregarCancionAPlaylist,
   buscarCancionEnSpotify
 } from '../conexion/spotify.js';
-import { obtenerMenuDJ } from '../core/menus.js';
+import { obtenerMenuTecnico } from '../core/menus.js';
 import { generarReporte } from '../core/monitoring.js';
 import { log } from '../utils/logger.js';
 import { manejarUsuarioNormal } from './usuario.js';
 
 /**
- * Manejar perfil DJ
+ * Manejar perfil Técnico
  */
-export async function manejarDJ(usuario, mensaje, estado) {
+export async function manejarTecnico(usuario, mensaje, estado) {
   const texto = mensaje.trim();
 
-  // Si no está en contexto DJ, verificar si quiere acceder al panel
-  if (!usuario.contexto || usuario.contexto === 'menu_dj') {
+  // Si no está en contexto Técnico, verificar si quiere acceder al panel
+  if (!usuario.contexto || usuario.contexto === 'menu_tecnico') {
     const opcion = parseInt(texto);
 
     switch (opcion) {
       case 6:
-        usuario.contexto = 'menu_dj';
-        return obtenerMenuDJ();
+        usuario.contexto = 'menu_tecnico';
+        return obtenerMenuTecnico();
 
       default:
         // Usar funcionalidad de usuario normal
@@ -33,7 +33,7 @@ export async function manejarDJ(usuario, mensaje, estado) {
   }
 
   // Contexto de menú DJ
-  if (usuario.contexto === 'menu_dj') {
+  if (usuario.contexto === 'menu_tecnico') {
     return await manejarMenuDJ(usuario, texto, estado);
   }
 
@@ -42,7 +42,7 @@ export async function manejarDJ(usuario, mensaje, estado) {
 }
 
 /**
- * Manejar menú DJ
+ * Manejar menú Técnico
  */
 async function manejarMenuDJ(usuario, texto, estado) {
   const opcion = parseInt(texto);
@@ -55,7 +55,7 @@ async function manejarMenuDJ(usuario, texto, estado) {
       return await saltarCancion();
 
     case 3:
-      usuario.contexto = 'dj_eliminar_cancion';
+      usuario.contexto = 'tecnico_eliminar_cancion';
       return await verColaParaEliminar();
 
     case 4:
@@ -66,13 +66,13 @@ async function manejarMenuDJ(usuario, texto, estado) {
       return generarReporte(estado);
 
     case 6:
-      usuario.contexto = 'dj_agregar_prioritaria';
+      usuario.contexto = 'tecnico_agregar_prioritaria';
       return '🎵 *AGREGAR CANCIÓN PRIORITARIA*\n\n' +
              'Escribe el nombre de la canción que quieres agregar al inicio de la cola.\n\n' +
              '0️⃣ Volver';
 
     case 7:
-      usuario.contexto = 'dj_confirmar_limpieza';
+      usuario.contexto = 'tecnico_confirmar_limpieza';
       return '⚠️ *¿ESTÁS SEGURO?*\n\n' +
              '¿Quieres limpiar toda la playlist?\n' +
              'Esta acción no se puede deshacer.\n\n' +
@@ -85,7 +85,7 @@ async function manejarMenuDJ(usuario, texto, estado) {
       return obtenerMenuPrincipal(usuario);
 
     default:
-      return '❌ Opción inválida.\n\n' + obtenerMenuDJ();
+      return '❌ Opción inválida.\n\n' + obtenerMenuTecnico();
   }
 }
 
@@ -138,7 +138,7 @@ async function saltarCancion() {
     const cancionActual = playlist[0].track;
     await eliminarCancionDePlaylist(cancionActual.uri);
 
-    log(`⏭️ Canción saltada por DJ: ${cancionActual.name}`, 'info');
+    log(`⏭️ Canción saltada por Técnico: ${cancionActual.name}`, 'info');
 
     return `⏭️ *Canción saltada*\n\n` +
            `🎵 ${cancionActual.name}\n` +

@@ -179,11 +179,11 @@ async function degradarUsuarioCmd(numero, estado) {
     return `❌ Usuario ${numero} no encontrado.`;
   }
 
-  promoverUsuario(usuario, PERFILES.FREE);
+  promoverUsuario(usuario, PERFILES.NORMAL);
 
   return `⬇️ *Usuario degradado*\n\n` +
          `👤 ${usuario.nombre} (${numero})\n` +
-         `🎵 Nuevo perfil: Free\n` +
+         `🎵 Nuevo perfil: Normal\n` +
          `🎵 Límite: 3 canciones/día`;
 }
 
@@ -295,7 +295,7 @@ async function manejarMenuAdmin(usuario, texto, estado) {
     case 5:
       usuario.contexto = 'admin_degradar';
       return '⬇️ *DEGRADAR USUARIO*\n\n' +
-             'Escribe el número del usuario a degradar a FREE.\n\n' +
+             'Escribe el número del usuario a degradar a NORMAL.\n\n' +
              '0️⃣ Cancelar';
 
     case 6:
@@ -345,7 +345,7 @@ function obtenerAyudaAdmin() {
          `/bloquear [número] - Bloquear usuario\n` +
          `/desbloquear [número] - Desbloquear usuario\n` +
          `/promover [número] [perfil] - Promover usuario\n` +
-         `/degradar [número] - Degradar a FREE\n` +
+         `/degradar [número] - Degradar a NORMAL\n` +
          `/usuarios - Listar usuarios\n` +
          `/bloqueados - Ver bloqueados\n\n` +
          `*SISTEMA*\n` +

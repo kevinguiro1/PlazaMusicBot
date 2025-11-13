@@ -32,12 +32,12 @@ export function obtenerMenuPrincipal(usuario) {
   }
 
   // Opciones DJ
-  if (usuario.perfil === PERFILES.DJ) {
-    menu += `6️⃣ 🎧 Panel DJ\n`;
+  if (usuario.perfil === PERFILES.TECNICO) {
+    menu += `6️⃣ 🎧 Panel Técnico\n`;
   }
 
   // Opciones Admin
-  if (usuario.perfil === PERFILES.ADMIN || usuario.perfil === PERFILES.SUPER_ADMIN) {
+  if (usuario.perfil === PERFILES.ADMINISTRADOR || usuario.perfil === PERFILES.ADMINISTRADOR) {
     menu += `9️⃣ 👤 Panel Admin\n`;
   }
 
@@ -100,10 +100,10 @@ export function obtenerMenuResultados(canciones, usuario) {
 }
 
 /**
- * Menú del panel DJ
+ * Menú del panel Técnico
  */
-export function obtenerMenuDJ() {
-  return `🎧 *PANEL DE DJ*\n\n` +
+export function obtenerMenuTecnico() {
+  return `🎧 *PANEL TÉCNICO*\n\n` +
          `━━━━━━━━━━━━━━━━━━━━━\n` +
          `1️⃣ 📜 Ver cola completa\n` +
          `2️⃣ ⏭️ Saltar canción actual\n` +
@@ -178,10 +178,10 @@ export function obtenerMenuAyuda(usuario) {
 
   ayuda += `━━━━━━━━━━━━━━━━━━━━━\n`;
   ayuda += `*PERFILES DISPONIBLES*\n\n`;
-  ayuda += `🎵 FREE - 3 canciones/día\n`;
+  ayuda += `🎵 NORMAL - 3 canciones/día\n`;
   ayuda += `⭐ PREMIUM - 10 canciones/día\n`;
   ayuda += `💎 VIP - Canciones ilimitadas\n`;
-  ayuda += `🎧 DJ - Control total de música\n\n`;
+  ayuda += `🎧 TÉCNICO - Control total de música\n\n`;
 
   ayuda += `━━━━━━━━━━━━━━━━━━━━━\n`;
   ayuda += `💡 ¿Necesitas ayuda? Contacta a un administrador.`;
@@ -199,7 +199,7 @@ export function obtenerMenuFAQ() {
          `Simplemente escribe el nombre de la canción o usa el menú de búsqueda.\n\n` +
          `*¿Cuántas canciones puedo pedir?*\n` +
          `Depende de tu perfil:\n` +
-         `• FREE: 3 por día\n` +
+         `• NORMAL: 3 por día\n` +
          `• PREMIUM: 10 por día\n` +
          `• VIP: Ilimitadas\n\n` +
          `*¿Cómo me hago Premium/VIP?*\n` +

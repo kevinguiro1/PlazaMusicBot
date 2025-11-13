@@ -5,22 +5,21 @@ import { log } from '../utils/logger.js';
  * Tipos de perfiles disponibles
  */
 export const PERFILES = {
-  FREE: 'free',
+  NORMAL: 'normal',
   PREMIUM: 'premium',
   VIP: 'vip',
-  DJ: 'dj',
-  ADMIN: 'admin',
-  SUPER_ADMIN: 'super_admin'
+  TECNICO: 'tecnico',
+  ADMINISTRADOR: 'administrador'
 };
 
 /**
  * Configuración de cada perfil
  */
 export const CONFIG_PERFILES = {
-  [PERFILES.FREE]: {
-    nombre: 'Usuario Gratuito',
+  [PERFILES.NORMAL]: {
+    nombre: 'Usuario Normal',
     emoji: '🎵',
-    limiteCanciones: parseInt(process.env.LIMITE_CANCIONES_FREE) || 3,
+    limiteCanciones: parseInt(process.env.LIMITE_CANCIONES_NORMAL) || 3,
     prioridad: 1,
     puedeVerCola: false,
     puedeVerEstadisticas: false,
@@ -50,9 +49,9 @@ export const CONFIG_PERFILES = {
     cooldownMinutos: 0,
     permisos: ['pedir_cancion', 'ver_menu', 'ver_cola', 'sugerir_artista', 'ver_estadisticas', 'prioridad_alta']
   },
-  [PERFILES.DJ]: {
-    nombre: 'DJ',
-    emoji: '🎧',
+  [PERFILES.TECNICO]: {
+    nombre: 'Técnico',
+    emoji: '🔧',
     limiteCanciones: 999,
     prioridad: 4,
     puedeVerCola: true,
@@ -70,9 +69,9 @@ export const CONFIG_PERFILES = {
       'prioridad_maxima'
     ]
   },
-  [PERFILES.ADMIN]: {
+  [PERFILES.ADMINISTRADORISTRADOR]: {
     nombre: 'Administrador',
-    emoji: '👤',
+    emoji: '👑',
     limiteCanciones: 999,
     prioridad: 5,
     puedeVerCola: true,
@@ -92,34 +91,7 @@ export const CONFIG_PERFILES = {
       'promover_usuario',
       'ver_usuarios',
       'enviar_mensajes_masivos',
-      'limpiar_playlist'
-    ]
-  },
-  [PERFILES.SUPER_ADMIN]: {
-    nombre: 'Super Administrador',
-    emoji: '👑',
-    limiteCanciones: 999,
-    prioridad: 10,
-    puedeVerCola: true,
-    puedeVerEstadisticas: true,
-    requiereUbicacion: false,
-    cooldownMinutos: 0,
-    permisos: [
-      'pedir_cancion',
-      'ver_menu',
-      'ver_cola',
-      'sugerir_artista',
-      'ver_estadisticas',
-      'gestionar_cola',
-      'eliminar_cancion',
-      'bloquear_usuario',
-      'desbloquear_usuario',
-      'promover_usuario',
-      'ver_usuarios',
-      'enviar_mensajes_masivos',
       'limpiar_playlist',
-      'crear_admin',
-      'eliminar_admin',
       'gestionar_bots',
       'acceso_total'
     ]
@@ -129,7 +101,7 @@ export const CONFIG_PERFILES = {
 /**
  * Crear nuevo usuario con perfil
  */
-export function crearUsuario(numero, nombre = null, perfil = PERFILES.FREE) {
+export function crearUsuario(numero, nombre = null, perfil = PERFILES.NORMAL) {
   const config = CONFIG_PERFILES[perfil];
 
   return {
@@ -173,7 +145,7 @@ export function tienePermiso(usuario, permiso) {
  * Obtener perfil de usuario
  */
 export function obtenerPerfil(usuario) {
-  return CONFIG_PERFILES[usuario.perfil] || CONFIG_PERFILES[PERFILES.FREE];
+  return CONFIG_PERFILES[usuario.perfil] || CONFIG_PERFILES[PERFILES.NORMAL];
 }
 
 /**
@@ -248,11 +220,11 @@ export function esAdmin(numero) {
 }
 
 /**
- * Verificar si es super administrador
+ * Verificar si es técnico
  */
-export function esSuperAdmin(numero) {
-  const superAdmins = (process.env.SUPER_ADMIN_NUMBERS || '').split(',').map(n => n.trim());
-  return superAdmins.includes(numero);
+export function esTecnico(numero) {
+  const tecnicos = (process.env.TECNICO_NUMBERS || '').split(',').map(n => n.trim());
+  return tecnicos.includes(numero);
 }
 
 /**
