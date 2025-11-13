@@ -62,7 +62,8 @@ export const CONFIG_PERFILES = {
     prioridad: 4,
     puedeVerCola: true,
     puedeVerEstadisticas: true,
-    requiereUbicacion: false,
+    requiereUbicacion: true,
+    validarUbicacion: true, // Debe estar en la plaza
     cooldownMinutos: 0,
     permisos: [
       'pedir_cancion',
