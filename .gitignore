@@ -137,3 +137,11 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Data directory (runtime data)
+data/
+datos/*.json
+\!datos/.gitkeep
+
+# WhatsApp sessions
+sessions/
