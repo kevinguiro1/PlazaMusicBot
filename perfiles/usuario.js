@@ -16,7 +16,8 @@ import {
   obtenerMenuGestionarMembresia,
   obtenerMenuBeneficiosPremium,
   obtenerMenuRenovarPremium,
-  obtenerMenuCancelarMembresia
+  obtenerMenuCancelarMembresia,
+  obtenerMensajeCancionBloqueada
 } from '../core/menus.js';
 import {
   buscarCancionEnSpotify,
@@ -433,11 +434,25 @@ async function confirmarCancion(usuario, texto, estado) {
   const cancion = usuario.cancionParaAgregar;
 
   try {
+    // Verificar anti-repetición (1 hora)
+    const { verificarCancionBloqueada, registrarCancionTocada } = await import('../core/history.js');
+    const verificacion = verificarCancionBloqueada(cancion.uri);
+
+    if (verificacion.bloqueada) {
+      // Canción está en periodo de bloqueo
+      usuario.contexto = 'seleccionar_cancion';
+      delete usuario.cancionParaAgregar;
+      return obtenerMensajeCancionBloqueada(cancion, verificacion.minutosRestantes);
+    }
+
     // Agregar a playlist con prioridad según perfil
     const perfil = obtenerPerfil(usuario);
     const posicion = perfil.prioridad >= 3 ? 0 : null; // VIP+ va al inicio
 
     await agregarCancionAPlaylist(cancion.uri, posicion);
+
+    // Registrar en historial
+    registrarCancionTocada(cancion.uri, usuario.numero);
 
     // Actualizar estadísticas del usuario
     usuario.cancionesPedidasHoy++;

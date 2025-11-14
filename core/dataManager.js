@@ -23,6 +23,11 @@ export async function cargarDatos() {
       artistasMasPedidos: {},
       cancionesMasPedidas: {}
     });
+    const historial = await cargarJSON('historial.json', []);
+
+    // Importar historial al sistema
+    const { importarHistorial } = await import('./history.js');
+    importarHistorial(historial);
 
     log('✅ Datos cargados exitosamente', 'info');
 
@@ -60,6 +65,11 @@ export async function guardarDatos(estado) {
     await guardarJSON('bloqueados.json', estado.bloqueados);
     await guardarJSON('solicitudes.json', estado.solicitudes);
     await guardarJSON('estadisticas.json', estado.estadisticas);
+
+    // Exportar y guardar historial de canciones
+    const { exportarHistorial } = await import('./history.js');
+    const historial = exportarHistorial();
+    await guardarJSON('historial.json', historial);
 
     log('💾 Datos guardados exitosamente', 'debug');
   } catch (error) {
@@ -115,7 +125,7 @@ export async function hacerBackup() {
 
     await fs.mkdir(backupDir, { recursive: true });
 
-    const archivos = ['usuarios.json', 'bloqueados.json', 'solicitudes.json', 'estadisticas.json'];
+    const archivos = ['usuarios.json', 'bloqueados.json', 'solicitudes.json', 'estadisticas.json', 'historial.json'];
 
     for (const archivo of archivos) {
       const origen = path.join(DATA_DIR, archivo);

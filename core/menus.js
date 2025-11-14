@@ -730,3 +730,63 @@ export function obtenerMensajeCooldownVIP(minutosRestantes) {
 
   return mensaje;
 }
+
+/**
+ * Mensaje de canción bloqueada por repetición (VIP)
+ */
+export function obtenerMensajeCancionBloqueadaVIP(cancion, minutosRestantes) {
+  const artistas = cancion.artists.map(a => a.name).join(', ');
+
+  let mensaje = `⛔ *CANCIÓN BLOQUEADA TEMPORALMENTE*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `🎵 ${cancion.name}\n`;
+  mensaje += `🎤 ${artistas}\n\n`;
+  mensaje += `Esta canción ya fue tocada recientemente.\n\n`;
+  mensaje += `Por políticas del sistema solo puede repetirse después de 1 hora.\n\n`;
+  mensaje += `⏱️ Faltan ${minutosRestantes} minutos para poder volver a ponerla.\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `💡 Intenta con otra canción.\n\n`;
+  mensaje += `0️⃣ Volver`;
+
+  return mensaje;
+}
+
+/**
+ * Mensaje de canción bloqueada por repetición (Normal/Premium)
+ */
+export function obtenerMensajeCancionBloqueada(cancion, minutosRestantes) {
+  const artistas = cancion.artists.map(a => a.name).join(', ');
+
+  let mensaje = `⛔ *CANCIÓN NO DISPONIBLE*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `🎵 ${cancion.name}\n`;
+  mensaje += `🎤 ${artistas}\n\n`;
+  mensaje += `Esta canción no puede repetirse hasta dentro de ${minutosRestantes} minutos.\n\n`;
+  mensaje += `Intenta con otra, por favor.\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `0️⃣ Volver`;
+
+  return mensaje;
+}
+
+/**
+ * Mensaje de advertencia para Admin/Técnico sobre canción bloqueada
+ */
+export function obtenerMensajeAdvertenciaAdmin(cancion, minutosTranscurridos) {
+  const artistas = cancion.artists.map(a => a.name).join(', ');
+
+  let mensaje = `⚠️ *ADVERTENCIA - CANCIÓN REPETIDA*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `🎵 ${cancion.name}\n`;
+  mensaje += `🎤 ${artistas}\n\n`;
+  mensaje += `Esta canción fue tocada hace ${minutosTranscurridos} minutos.\n\n`;
+  mensaje += `Solo puede repetirse cada hora.\n\n`;
+  mensaje += `Pero como administrador/técnico puedes saltar esta restricción.\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `¿Deseas agregarla?\n\n`;
+  mensaje += `1️⃣ Sí, agregar de todos modos\n`;
+  mensaje += `2️⃣ No, cancelar\n\n`;
+  mensaje += `0️⃣ Volver`;
+
+  return mensaje;
+}

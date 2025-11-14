@@ -13,7 +13,8 @@ import {
   obtenerMenuPrivilegiosVIP,
   obtenerMenuBeneficiosVIP,
   obtenerMenuHistorialVIP,
-  obtenerMensajeCooldownVIP
+  obtenerMensajeCooldownVIP,
+  obtenerMensajeCancionBloqueadaVIP
 } from '../core/menus.js';
 import {
   buscarCancionEnSpotify,
@@ -295,8 +296,22 @@ async function confirmarCancionVIP(usuario, texto, estado) {
   const cancion = usuario.cancionParaAgregar;
 
   try {
+    // Verificar anti-repetición (1 hora) - VIP también tiene esta restricción
+    const { verificarCancionBloqueada, registrarCancionTocada } = await import('../core/history.js');
+    const verificacion = verificarCancionBloqueada(cancion.uri);
+
+    if (verificacion.bloqueada) {
+      // Canción está en periodo de bloqueo - mensaje específico VIP
+      usuario.contexto = 'seleccionar_cancion_vip';
+      delete usuario.cancionParaAgregar;
+      return obtenerMensajeCancionBloqueadaVIP(cancion, verificacion.minutosRestantes);
+    }
+
     // Agregar a playlist con prioridad VIP (posición 0 - después de la canción actual)
     await agregarCancionAPlaylist(cancion.uri, 0);
+
+    // Registrar en historial
+    registrarCancionTocada(cancion.uri, usuario.numero);
 
     // Actualizar estadísticas del usuario
     usuario.cancionesPedidas++;
