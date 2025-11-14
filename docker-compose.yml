@@ -1,14 +1,94 @@
-version: '3.3'
+version: '3.8'
+
 services:
-  musica_bot:
-    build: .
-    container_name: musica_bot
-    environment:
-      - NODE_ENV=production
-      - SESSION=musica  # si usas whatsapp-web.js con persistencia de sesión
-    ports:
-      - "4040:4040"
-    volumes:
-      - ./session:/app/session      # persistencia QR/session data
-      - /opt/musica:/opt/musica    # monta la carpeta del proyecto en el contenedor
+  plazamusic-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: plazamusic_bot_production
     restart: unless-stopped
+
+    environment:
+      # === CONFIGURACIÓN GENERAL ===
+      NODE_ENV: production
+      DATA_ROOT: /app/data
+      LOG_LEVEL: INFO
+
+      # === WHATSAPP ===
+      NOMBRE_BOT: PlazaMusicBot
+
+      # === SPOTIFY ===
+      # Tokens se cargan de /app/data/spotify/tokens/active.json
+
+      # === UBICACIÓN (Plaza principal) ===
+      PLAZA_LAT: 23.2494
+      PLAZA_LON: -106.4111
+      PLAZA_RADIUS_KM: 0.5
+
+      # === ADMINISTRADORES ===
+      # Formato: numero1,numero2,numero3
+      ADMIN_NUMBERS: "5218661165920"
+      TECNICO_NUMBERS: ""
+
+      # === LÍMITES Y SEGURIDAD ===
+      MAX_REQUESTS_PER_MINUTE: 20
+      FLOOD_THRESHOLD: 5
+      FLOOD_WINDOW_MS: 10000
+
+      # === PRECIOS ===
+      PRECIO_PREMIUM: 10
+      PRECIO_VIP: 100
+
+    volumes:
+      # === VOLUMEN PRINCIPAL (PERSISTENTE) ===
+      # TODO SE GUARDA AQUÍ Y NUNCA SE PIERDE
+      - plazamusic_data:/app/data
+
+      # === SESIONES DE WHATSAPP ===
+      - whatsapp_sessions:/app/sessions
+
+    ports:
+      # Panel web de administración (opcional)
+      - "3000:3000"
+
+    networks:
+      - plazamusic_network
+
+    # === HEALTH CHECK ===
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # === RECURSOS ===
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+# === VOLÚMENES PERSISTENTES ===
+volumes:
+  plazamusic_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/plazamusic/data
+
+  whatsapp_sessions:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/plazamusic/sessions
+
+# === REDES ===
+networks:
+  plazamusic_network:
+    driver: bridge
