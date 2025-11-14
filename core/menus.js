@@ -17,51 +17,67 @@ export function obtenerMenuPrincipal(usuario) {
   menu += `📋 *MENÚ PRINCIPAL*\n`;
   menu += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  // Opciones básicas para todos
-  menu += `1️⃣ 🎵 Pedir canción\n`;
-  menu += `2️⃣ 🎤 Buscar por artista\n`;
-  menu += `3️⃣ 📜 Ver próximas 5 canciones\n`;
+  // Menú simplificado para usuarios normales
+  if (usuario.perfil === PERFILES.NORMAL || usuario.perfil === PERFILES.PREMIUM || usuario.perfil === PERFILES.VIP) {
+    const disponibles = perfil.limiteCanciones - (usuario.cancionesPedidasHoy || 0);
+    menu += `1️⃣ 🎵 Pedir canción (${disponibles}/${perfil.limiteCanciones} disponibles hoy)\n`;
+    menu += `2️⃣ 📊 Ver cola y tiempos\n`;
 
-  // Opciones premium+
-  if (perfil.puedeVerCola) {
-    menu += `4️⃣ 📜 Ver cola completa\n`;
+    // Solo mostrar upgrade si no es VIP
+    if (usuario.perfil !== PERFILES.VIP) {
+      menu += `3️⃣ 💎 Hacerme Premium/VIP\n`;
+    }
+
+    menu += `4️⃣ 📜 Ver letra actual\n`;
+    menu += `\n0️⃣ 🚪 Salir\n`;
+  }
+  // Menú para Técnico
+  else if (usuario.perfil === PERFILES.TECNICO) {
+    menu += `1️⃣ 🎵 Pedir canción\n`;
+    menu += `2️⃣ 📊 Ver cola y tiempos\n`;
+    menu += `3️⃣ 🎧 Panel Técnico\n`;
+    menu += `4️⃣ 📜 Ver letra actual\n`;
+    menu += `\n0️⃣ 🚪 Salir\n`;
+  }
+  // Menú para Admin
+  else if (usuario.perfil === PERFILES.ADMINISTRADOR) {
+    menu += `1️⃣ 🎵 Pedir canción\n`;
+    menu += `2️⃣ 📊 Ver cola y tiempos\n`;
+    menu += `3️⃣ 👤 Panel Admin\n`;
+    menu += `4️⃣ 📜 Ver letra actual\n`;
+    menu += `\n0️⃣ 🚪 Salir\n`;
   }
 
-  // Opciones VIP+
-  if (perfil.puedeVerEstadisticas) {
-    menu += `5️⃣ 📊 Ver estadísticas\n`;
-    menu += `6️⃣ 👤 Mi perfil\n`;
-  }
-
-  // Opciones DJ
-  if (usuario.perfil === PERFILES.TECNICO) {
-    menu += `7️⃣ 🎧 Panel Técnico\n`;
-  }
-
-  // Opciones Admin
-  if (usuario.perfil === PERFILES.ADMINISTRADOR || usuario.perfil === PERFILES.ADMINISTRADOR) {
-    menu += `9️⃣ 👤 Panel Admin\n`;
-  }
-
-  menu += `\n0️⃣ ❌ Salir\n`;
-  menu += `❓ ℹ️ Ayuda\n\n`;
-  menu += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  menu += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
   menu += `💡 Escribe el número de opción`;
 
   return menu;
 }
 
 /**
+ * Menú de tipo de búsqueda
+ */
+export function obtenerMenuTipoBusqueda() {
+  return `🎵 *PEDIR CANCIÓN*\n\n` +
+         `¿Cómo quieres buscar tu canción?\n\n` +
+         `1️⃣ Por nombre\n` +
+         `2️⃣ Por artista\n\n` +
+         `0️⃣ Volver\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n` +
+         `💡 Escribe el número`;
+}
+
+/**
  * Menú de búsqueda de canciones
  */
 export function obtenerMenuBusqueda() {
-  return `🔍 *BÚSQUEDA DE CANCIONES*\n\n` +
-         `Escribe el nombre de la canción que deseas buscar.\n\n` +
+  return `🔍 *BÚSQUEDA POR NOMBRE*\n\n` +
+         `Escribe el nombre de la canción:\n\n` +
          `💡 Ejemplos:\n` +
          `• "Bohemian Rhapsody"\n` +
-         `• "Shape of You Ed Sheeran"\n` +
-         `• "Despacito"\n\n` +
-         `📝 Escribe el nombre o escribe "0" para volver al menú principal.`;
+         `• "Despacito"\n` +
+         `• "Un x100to"\n\n` +
+         `0️⃣ Volver`;
 }
 
 /**
@@ -69,36 +85,50 @@ export function obtenerMenuBusqueda() {
  */
 export function obtenerMenuArtista() {
   return `🎤 *BÚSQUEDA POR ARTISTA*\n\n` +
-         `Escribe el nombre del artista que te interesa.\n\n` +
+         `Escribe el nombre del artista:\n\n` +
          `💡 Ejemplos:\n` +
          `• "Queen"\n` +
-         `• "Ed Sheeran"\n` +
-         `• "Bad Bunny"\n\n` +
-         `📝 Escribe el nombre o "0" para volver.`;
+         `• "Bad Bunny"\n` +
+         `• "Ed Sheeran"\n\n` +
+         `0️⃣ Volver`;
 }
 
 /**
- * Menú de resultados de búsqueda
+ * Menú de resultados de búsqueda (TOP 10)
  */
 export function obtenerMenuResultados(canciones, usuario) {
-  const perfil = obtenerPerfil(usuario);
+  let menu = `🎵 *TOP 10 ENCONTRADO*\n\n`;
 
-  let menu = `🎵 *RESULTADOS DE BÚSQUEDA*\n\n`;
+  const mostrar = Math.min(canciones.length, 10);
 
-  canciones.forEach((cancion, index) => {
+  for (let i = 0; i < mostrar; i++) {
+    const cancion = canciones[i];
     const artistas = cancion.artists.map(a => a.name).join(', ');
-    const duracion = formatearDuracion(cancion.duration_ms);
-    menu += `${index + 1}️⃣ *${cancion.name}*\n`;
-    menu += `   🎤 ${artistas}\n`;
-    menu += `   ⏱️ ${duracion}\n\n`;
-  });
+    menu += `${i + 1}️⃣ ${cancion.name}\n`;
+    menu += `   🎤 ${artistas}\n\n`;
+  }
 
   menu += `━━━━━━━━━━━━━━━━━━━━━\n`;
-  menu += `📝 Escribe el número (1-${canciones.length}) para seleccionar\n`;
-  menu += `0️⃣ Volver al menú\n`;
-  menu += `🔄 "nueva" para nueva búsqueda`;
+  menu += `📝 Escribe el número (1-${mostrar})\n`;
+  menu += `0️⃣ Volver`;
 
   return menu;
+}
+
+/**
+ * Menú de confirmación de canción
+ */
+export function obtenerMenuConfirmacion(cancion) {
+  const artistas = cancion.artists.map(a => a.name).join(', ');
+
+  return `🎵 *CONFIRMACIÓN*\n\n` +
+         `¿Agregar esta canción?\n\n` +
+         `🎵 ${cancion.name}\n` +
+         `🎤 ${artistas}\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+         `1️⃣ Sí\n` +
+         `2️⃣ No\n\n` +
+         `💡 Escribe el número`;
 }
 
 /**
@@ -224,65 +254,103 @@ export function obtenerMenuFAQ() {
 }
 
 /**
- * Menú de upgrade de perfil
+ * Menú de upgrade de perfil (simplificado)
  */
 export function obtenerMenuUpgrade(usuario) {
-  let mensaje = `⭐ *MEJORA TU PERFIL*\n\n`;
-  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
-  mensaje += `Tu perfil actual: ${obtenerPerfil(usuario).nombre}\n\n`;
-  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  let mensaje = `💎 *OPCIONES DE MEMBRESÍA*\n\n`;
 
   // Solo mostrar upgrades disponibles
   if (usuario.perfil === PERFILES.NORMAL) {
-    mensaje += `⭐ *PREMIUM* - $10 MXN\n`;
-    mensaje += `• 10 canciones por día\n`;
-    mensaje += `• Ver cola completa\n`;
-    mensaje += `• Ver estadísticas\n`;
-    mensaje += `• Prioridad media\n\n`;
+    mensaje += `1️⃣ 💎 *PREMIUM* - $10 pesos\n`;
+    mensaje += `   • 3 canciones/día\n`;
+    mensaje += `   • Prioridad media\n`;
+    mensaje += `   • Vigencia: 24 horas\n\n`;
 
-    mensaje += `💎 *VIP* - $100 MXN\n`;
-    mensaje += `• 1 canción por hora\n`;
-    mensaje += `• Prioridad MÁXIMA\n`;
-    mensaje += `• Pedir desde cualquier lugar\n`;
-    mensaje += `• Estadísticas avanzadas\n`;
-    mensaje += `• No puedes cancelar (garantizado)\n\n`;
+    mensaje += `2️⃣ 👑 *VIP* - $100 por canción\n`;
+    mensaje += `   • 1 canción\n`;
+    mensaje += `   • Prioridad máxima\n\n`;
   } else if (usuario.perfil === PERFILES.PREMIUM) {
-    mensaje += `💎 *VIP* - $100 MXN\n`;
-    mensaje += `• 1 canción por hora\n`;
-    mensaje += `• Prioridad MÁXIMA\n`;
-    mensaje += `• Pedir desde cualquier lugar\n`;
-    mensaje += `• Estadísticas avanzadas\n`;
-    mensaje += `• No puedes cancelar (garantizado)\n\n`;
+    mensaje += `1️⃣ 👑 *VIP* - $100 por canción\n`;
+    mensaje += `   • 1 canción\n`;
+    mensaje += `   • Prioridad máxima\n\n`;
   }
 
-  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
-  mensaje += `*MÉTODOS DE PAGO*\n\n`;
-  mensaje += `1️⃣ Pago en OXXO\n`;
-  mensaje += `2️⃣ Transferencia SPEI\n\n`;
+  mensaje += `3️⃣ 💳 Ver métodos de pago\n\n`;
   mensaje += `0️⃣ Volver\n\n`;
   mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
-  mensaje += `💡 Selecciona un método de pago`;
+  mensaje += `💡 Escribe el número`;
 
   return mensaje;
 }
 
 /**
- * Menú de selección de perfil para upgrade
+ * Menú de métodos de pago (solo OXXO QR)
  */
-export function obtenerMenuSeleccionPerfil(usuario) {
-  let mensaje = `⭐ *SELECCIONA TU PERFIL*\n\n`;
+export function obtenerMenuMetodosPago() {
+  return `💳 *MÉTODO DE PAGO DISPONIBLE*\n\n` +
+         `1️⃣ Pago vía QR OXXO\n\n` +
+         `0️⃣ Volver\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n` +
+         `💡 Escribe el número`;
+}
 
-  if (usuario.perfil === PERFILES.NORMAL) {
-    mensaje += `1️⃣ PREMIUM - $10 MXN\n`;
-    mensaje += `2️⃣ VIP - $100 MXN\n\n`;
-  } else if (usuario.perfil === PERFILES.PREMIUM) {
-    mensaje += `1️⃣ VIP - $100 MXN\n\n`;
+/**
+ * Menú de cola y tiempos
+ */
+export function obtenerMenuColaYTiempos(canciones) {
+  let mensaje = `📊 *COLA Y TIEMPOS*\n\n`;
+  mensaje += `Estas son las próximas 5 canciones:\n\n`;
+
+  const mostrar = Math.min(canciones.length, 5);
+  let tiempoAcumulado = 0;
+
+  for (let i = 0; i < mostrar; i++) {
+    const track = canciones[i].track;
+    const artistas = track.artists.map(a => a.name).join(', ');
+    const minutos = Math.floor(tiempoAcumulado / 60000);
+
+    mensaje += `${i + 1}️⃣ ${track.name}\n`;
+    mensaje += `   🎤 ${artistas}\n`;
+    mensaje += `   ⏳ ${minutos} min\n\n`;
+
+    tiempoAcumulado += track.duration_ms;
   }
 
-  mensaje += `0️⃣ Cancelar\n\n`;
-  mensaje += `💡 Escribe el número`;
+  const tiempoTotalMin = Math.floor(tiempoAcumulado / 60000);
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  mensaje += `⏱️ Tiempo total estimado: ${tiempoTotalMin} min\n\n`;
+  mensaje += `0️⃣ Volver`;
 
   return mensaje;
+}
+
+/**
+ * Menú de letra actual
+ */
+export function obtenerMenuLetraActual(cancion, letra = null) {
+  const artistas = cancion ? cancion.artists.map(a => a.name).join(', ') : 'N/A';
+
+  if (!cancion) {
+    return `📜 *LETRA ACTUAL*\n\n` +
+           `No hay ninguna canción sonando actualmente.\n\n` +
+           `0️⃣ Volver`;
+  }
+
+  if (!letra) {
+    return `📜 *LETRA ACTUAL*\n\n` +
+           `🎵 ${cancion.name}\n` +
+           `🎤 ${artistas}\n\n` +
+           `Esta canción no tiene letra disponible.\n\n` +
+           `0️⃣ Volver`;
+  }
+
+  return `📜 *LETRA ACTUAL*\n\n` +
+         `🎵 ${cancion.name}\n` +
+         `🎤 ${artistas}\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+         `${letra}\n\n` +
+         `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+         `0️⃣ Volver`;
 }
 
 /**

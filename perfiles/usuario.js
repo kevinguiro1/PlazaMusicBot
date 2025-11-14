@@ -6,9 +6,13 @@ import {
 } from '../core/profiles.js';
 import {
   obtenerMenuPrincipal,
+  obtenerMenuTipoBusqueda,
   obtenerMenuBusqueda,
   obtenerMenuArtista,
-  obtenerMenuResultados
+  obtenerMenuResultados,
+  obtenerMenuConfirmacion,
+  obtenerMenuColaYTiempos,
+  obtenerMenuLetraActual
 } from '../core/menus.js';
 import {
   buscarCancionEnSpotify,
@@ -34,43 +38,56 @@ export async function manejarUsuarioNormal(usuario, mensaje, estado) {
 
     switch (opcion) {
       case 1:
-        usuario.contexto = 'buscar_cancion';
-        return obtenerMenuBusqueda();
+        // Pedir canción - mostrar tipo de búsqueda
+        usuario.contexto = 'tipo_busqueda';
+        return obtenerMenuTipoBusqueda();
 
       case 2:
-        usuario.contexto = 'buscar_artista';
-        return obtenerMenuArtista();
+        // Ver cola y tiempos
+        return await mostrarColaYTiempos();
 
       case 3:
-        return await mostrarProximas5Canciones();
+        // Hacerme Premium/VIP (solo si no es VIP)
+        if (usuario.perfil === 'vip') {
+          return '✨ Ya tienes el perfil VIP, no puedes mejorarlo más.';
+        }
+        // Redirigir al flujo de upgrade
+        usuario.contexto = 'upgrade_inicio';
+        const { manejarUpgrade } = await import('./payments-handler.js');
+        return await manejarUpgrade(usuario, 'inicio', estado);
 
       case 4:
-        if (perfil.puedeVerCola) {
-          return await mostrarCola();
-        }
-        return '❌ Esta opción no está disponible para tu perfil.';
-
-      case 5:
-        if (perfil.puedeVerEstadisticas) {
-          return mostrarEstadisticasUsuario(usuario);
-        }
-        return '❌ Esta opción no está disponible para tu perfil.';
-
-      case 6:
-        if (perfil.puedeVerEstadisticas) {
-          const { obtenerResumenPerfil } = await import('../core/profiles.js');
-          return obtenerResumenPerfil(usuario);
-        }
-        return '❌ Esta opción no está disponible para tu perfil.';
+        // Ver letra actual
+        return await mostrarLetraActual();
 
       case 0:
         return `👋 Hasta pronto ${usuario.nombre}!\n\nEscribe "menu" cuando quieras volver.`;
 
       default:
-        // Búsqueda libre
-        usuario.contexto = 'buscar_cancion';
-        return await buscarCancion(usuario, texto, estado);
+        return '❌ Opción inválida.\n\n' + obtenerMenuPrincipal(usuario);
     }
+  }
+
+  // Manejar tipo de búsqueda
+  if (usuario.contexto === 'tipo_busqueda') {
+    const opcion = parseInt(texto);
+
+    if (opcion === 0) {
+      usuario.contexto = null;
+      return obtenerMenuPrincipal(usuario);
+    }
+
+    if (opcion === 1) {
+      usuario.contexto = 'buscar_cancion';
+      return obtenerMenuBusqueda();
+    }
+
+    if (opcion === 2) {
+      usuario.contexto = 'buscar_artista';
+      return obtenerMenuArtista();
+    }
+
+    return '❌ Opción inválida.\n\n' + obtenerMenuTipoBusqueda();
   }
 
   // Manejar contextos
@@ -94,6 +111,10 @@ export async function manejarUsuarioNormal(usuario, mensaje, estado) {
 
   if (usuario.contexto === 'seleccionar_cancion') {
     return await seleccionarCancion(usuario, texto, estado);
+  }
+
+  if (usuario.contexto === 'confirmar_cancion') {
+    return await confirmarCancion(usuario, texto, estado);
   }
 
   // Por defecto, mostrar menú
@@ -219,49 +240,11 @@ async function seleccionarCancion(usuario, texto, estado) {
       return mensajeLimiteAlcanzado(usuario);
     }
 
-    // Agregar a playlist con prioridad según perfil
-    const perfil = obtenerPerfil(usuario);
-    const posicion = perfil.prioridad >= 3 ? 0 : null; // VIP+ va al inicio
+    // Guardar canción seleccionada y pedir confirmación
+    usuario.cancionParaAgregar = cancionSeleccionada;
+    usuario.contexto = 'confirmar_cancion';
 
-    await agregarCancionAPlaylist(cancionSeleccionada.uri, posicion);
-
-    // Actualizar estadísticas del usuario
-    usuario.cancionesPedidasHoy++;
-    usuario.cancionesPedidas++;
-    usuario.agregadasHoy.push(cancionSeleccionada.uri);
-    usuario.estadisticas.totalCanciones++;
-
-    // Actualizar artistas favoritos
-    const artista = cancionSeleccionada.artists[0].name;
-    usuario.estadisticas.artistasFavoritos[artista] =
-      (usuario.estadisticas.artistasFavoritos[artista] || 0) + 1;
-
-    // Calcular tiempo estimado
-    const { minutos, segundos } = await calcularTiempoParaTrack(cancionSeleccionada.uri);
-
-    // Limpiar contexto
-    usuario.contexto = null;
-    usuario.ultimaSugerencia = null;
-
-    const artistas = cancionSeleccionada.artists.map(a => a.name).join(', ');
-
-    let respuesta = `✅ *¡Canción agregada!*\n\n`;
-    respuesta += `🎵 ${cancionSeleccionada.name}\n`;
-    respuesta += `🎤 ${artistas}\n\n`;
-
-    if (minutos > 0 || segundos > 0) {
-      respuesta += `⏱️ Sonará en aproximadamente: ${minutos}m ${segundos}s\n\n`;
-    }
-
-    respuesta += `📊 Canciones pedidas hoy: ${usuario.cancionesPedidasHoy}/${perfil.limiteCanciones}\n\n`;
-    respuesta += `💡 Escribe "menu" para pedir más canciones.`;
-
-    log(
-      `✅ ${usuario.nombre} agregó: ${cancionSeleccionada.name}`,
-      'info'
-    );
-
-    return respuesta;
+    return obtenerMenuConfirmacion(cancionSeleccionada);
   } catch (error) {
     log(`❌ Error en seleccionarCancion: ${error.message}`, 'error');
     return '❌ Ocurrió un error agregando la canción. Intenta nuevamente.';
@@ -402,4 +385,114 @@ function formatearDuracion(ms) {
   const minutos = Math.floor(ms / 60000);
   const segundos = Math.floor((ms % 60000) / 1000);
   return `${minutos}:${segundos.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Confirmar canción seleccionada
+ */
+async function confirmarCancion(usuario, texto, estado) {
+  const opcion = parseInt(texto);
+
+  if (opcion === 2 || texto === '0') {
+    // No agregar
+    usuario.contexto = 'seleccionar_cancion';
+    delete usuario.cancionParaAgregar;
+    return obtenerMenuResultados(usuario.ultimaSugerencia.canciones, usuario);
+  }
+
+  if (opcion !== 1) {
+    return '❌ Opción inválida.\n\n' + obtenerMenuConfirmacion(usuario.cancionParaAgregar);
+  }
+
+  // Opción 1: Sí, agregar
+  const cancion = usuario.cancionParaAgregar;
+
+  try {
+    // Agregar a playlist con prioridad según perfil
+    const perfil = obtenerPerfil(usuario);
+    const posicion = perfil.prioridad >= 3 ? 0 : null; // VIP+ va al inicio
+
+    await agregarCancionAPlaylist(cancion.uri, posicion);
+
+    // Actualizar estadísticas del usuario
+    usuario.cancionesPedidasHoy++;
+    usuario.cancionesPedidas++;
+    usuario.agregadasHoy.push(cancion.uri);
+    usuario.estadisticas.totalCanciones++;
+
+    // Actualizar artistas favoritos
+    const artista = cancion.artists[0].name;
+    usuario.estadisticas.artistasFavoritos[artista] =
+      (usuario.estadisticas.artistasFavoritos[artista] || 0) + 1;
+
+    // Calcular tiempo estimado
+    const { minutos, segundos } = await calcularTiempoParaTrack(cancion.uri);
+
+    // Limpiar contexto
+    usuario.contexto = null;
+    usuario.ultimaSugerencia = null;
+    delete usuario.cancionParaAgregar;
+
+    const artistas = cancion.artists.map(a => a.name).join(', ');
+    const disponibles = perfil.limiteCanciones - usuario.cancionesPedidasHoy;
+
+    log(`✅ ${usuario.nombre} agregó: ${cancion.name}`, 'info');
+
+    return `✅ *¡Canción agregada!*\n\n` +
+           `🎵 ${cancion.name}\n` +
+           `🎤 ${artistas}\n\n` +
+           `⏱️ Sonará en aproximadamente: ${minutos}m ${segundos}s\n\n` +
+           `📊 Canciones disponibles hoy: ${disponibles}/${perfil.limiteCanciones}\n\n` +
+           `💡 Escribe "menu" para volver al menú principal.`;
+  } catch (error) {
+    log(`❌ Error confirmando canción: ${error.message}`, 'error');
+    usuario.contexto = null;
+    delete usuario.cancionParaAgregar;
+    return '❌ Error agregando la canción. Intenta nuevamente.';
+  }
+}
+
+/**
+ * Mostrar cola y tiempos
+ */
+async function mostrarColaYTiempos() {
+  try {
+    const playlist = await obtenerPlaylist();
+
+    if (playlist.length === 0) {
+      return '📊 *COLA Y TIEMPOS*\n\n' +
+             '🎵 La cola está vacía.\n\n' +
+             '💡 ¡Sé el primero en agregar una canción!\n\n' +
+             '0️⃣ Volver';
+    }
+
+    return obtenerMenuColaYTiempos(playlist);
+  } catch (error) {
+    log(`❌ Error mostrando cola y tiempos: ${error.message}`, 'error');
+    return '❌ Error obteniendo la cola de reproducción.';
+  }
+}
+
+/**
+ * Mostrar letra actual
+ */
+async function mostrarLetraActual() {
+  try {
+    // Obtener reproducción actual
+    const { obtenerReproduccionActual } = await import('../conexion/spotify.js');
+    const estado = await obtenerReproduccionActual();
+
+    if (!estado || !estado.item) {
+      return obtenerMenuLetraActual(null);
+    }
+
+    const cancion = estado.item;
+
+    // Por ahora, sin letra (implementación futura)
+    // En producción se conectaría a API de letras (Genius, Musixmatch, etc.)
+    return obtenerMenuLetraActual(cancion, null);
+  } catch (error) {
+    log(`❌ Error mostrando letra: ${error.message}`, 'error');
+    return '❌ Error obteniendo la letra.';
+  }
 }

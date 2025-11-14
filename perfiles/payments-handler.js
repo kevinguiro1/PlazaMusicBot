@@ -15,25 +15,31 @@ import { PERFILES } from '../core/profiles.js';
 import { log } from '../utils/logger.js';
 
 /**
- * Manejar flujo de upgrade de perfil
+ * Manejar flujo de upgrade de perfil (simplificado)
  */
 export async function manejarUpgrade(usuario, mensaje, estado) {
   const texto = mensaje.trim();
 
   // Mostrar menú de upgrade inicial
   if (!usuario.contexto || usuario.contexto === 'upgrade_inicio') {
-    usuario.contexto = 'upgrade_seleccionar_perfil';
-    return obtenerMenuSeleccionPerfil(usuario);
+    usuario.contexto = 'upgrade_seleccionar_opcion';
+    return obtenerMenuUpgrade(usuario);
   }
 
-  // Selección de perfil
-  if (usuario.contexto === 'upgrade_seleccionar_perfil') {
+  // Selección de opción (Premium, VIP o Ver métodos)
+  if (usuario.contexto === 'upgrade_seleccionar_opcion') {
     const opcion = parseInt(texto);
 
     if (opcion === 0 || texto.toLowerCase() === 'cancelar') {
       usuario.contexto = null;
-      return `❌ Upgrade cancelado.\n\n` +
+      return `❌ Cancelado.\n\n` +
              `Escribe "menu" para volver al menú principal.`;
+    }
+
+    // Opción 3: Ver métodos de pago
+    if (opcion === 3) {
+      const { obtenerMenuMetodosPago } = await import('../core/menus.js');
+      return obtenerMenuMetodosPago();
     }
 
     let perfilSeleccionado = null;
@@ -51,61 +57,34 @@ export async function manejarUpgrade(usuario, mensaje, estado) {
     }
 
     if (!perfilSeleccionado) {
-      return `❌ Opción inválida.\n\n` +
-             obtenerMenuSeleccionPerfil(usuario);
+      return `❌ Opción inválida.\n\n` + obtenerMenuUpgrade(usuario);
     }
 
-    // Guardar perfil seleccionado
-    usuario.pagoEnProceso = {
-      perfil: perfilSeleccionado
-    };
-
-    usuario.contexto = 'upgrade_metodo_pago';
-
-    return `⭐ *SELECCIONA MÉTODO DE PAGO*\n\n` +
-           `Perfil seleccionado: ${perfilSeleccionado.toUpperCase()}\n\n` +
-           `1️⃣ Pago en OXXO\n` +
-           `2️⃣ Transferencia SPEI\n\n` +
-           `0️⃣ Cancelar\n\n` +
-           `💡 Escribe el número`;
-  }
-
-  // Selección de método de pago
-  if (usuario.contexto === 'upgrade_metodo_pago') {
-    const opcion = parseInt(texto);
-
-    if (opcion === 0 || texto.toLowerCase() === 'cancelar') {
-      usuario.contexto = null;
-      delete usuario.pagoEnProceso;
-      return `❌ Upgrade cancelado.\n\n` +
-             `Escribe "menu" para volver al menú principal.`;
-    }
-
-    const perfil = usuario.pagoEnProceso.perfil;
+    // Guardar perfil seleccionado y generar pago OXXO directamente
+    const perfilNombre = perfilSeleccionado === PERFILES.PREMIUM ? 'PREMIUM' : 'VIP';
 
     try {
-      if (opcion === 1) {
-        // Generar pago OXXO
-        const datosPago = await generarPagoOXXO(usuario, perfil);
-        usuario.contexto = 'upgrade_esperando_comprobante';
-        usuario.pagoEnProceso.referencia = datosPago.referencia;
-        usuario.pagoEnProceso.tipo = 'OXXO';
+      // Generar pago OXXO
+      const datosPago = await generarPagoOXXO(usuario, perfilSeleccionado);
+      usuario.contexto = 'upgrade_esperando_comprobante';
+      usuario.pagoEnProceso = {
+        perfil: perfilSeleccionado,
+        referencia: datosPago.referencia,
+        tipo: 'OXXO'
+      };
 
-        return formatearPagoOXXO(datosPago);
-      } else if (opcion === 2) {
-        // Generar pago SPEI
-        const datosPago = await generarPagoSPEI(usuario, perfil);
-        usuario.contexto = 'upgrade_esperando_comprobante';
-        usuario.pagoEnProceso.referencia = datosPago.referencia;
-        usuario.pagoEnProceso.tipo = 'SPEI';
+      let mensaje = `💳 *PAGO ${perfilNombre} - OXXO*\n\n`;
+      mensaje += `Escanea el siguiente código QR:\n`;
+      mensaje += `[QR ${perfilNombre}]\n\n`;
+      mensaje += `💰 Monto: $${datosPago.monto} pesos\n\n`;
+      mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      mensaje += `Una vez que pagues, envía foto del ticket.\n\n`;
+      mensaje += `¿Ya realizaste el pago?\n\n`;
+      mensaje += `1️⃣ Sí, enviar comprobante\n`;
+      mensaje += `2️⃣ Ver QR nuevamente\n\n`;
+      mensaje += `0️⃣ Cancelar`;
 
-        return formatearPagoSPEI(datosPago);
-      } else {
-        return `❌ Opción inválida.\n\n` +
-               `1️⃣ OXXO\n` +
-               `2️⃣ SPEI\n` +
-               `0️⃣ Cancelar`;
-      }
+      return mensaje;
     } catch (error) {
       log(`❌ Error generando pago: ${error.message}`, 'error');
       usuario.contexto = null;
@@ -114,9 +93,11 @@ export async function manejarUpgrade(usuario, mensaje, estado) {
     }
   }
 
-  // Esperando comprobante (este caso se maneja en messageHandler con imágenes)
+  // Esperando comprobante
   if (usuario.contexto === 'upgrade_esperando_comprobante') {
-    if (texto.toLowerCase() === 'cancelar' || texto === '0') {
+    const opcion = parseInt(texto);
+
+    if (texto.toLowerCase() === 'cancelar' || opcion === 0) {
       usuario.contexto = null;
       delete usuario.pagoEnProceso;
       return `❌ Proceso de pago cancelado.\n\n` +
@@ -124,11 +105,35 @@ export async function manejarUpgrade(usuario, mensaje, estado) {
              `Puedes enviar el comprobante en cualquier momento.`;
     }
 
-    return `⏳ *ESPERANDO COMPROBANTE*\n\n` +
-           `Por favor envía una *foto* de tu comprobante de pago.\n\n` +
-           `📋 Referencia: ${usuario.pagoEnProceso.referencia}\n` +
-           `💳 Método: ${usuario.pagoEnProceso.tipo}\n\n` +
-           `💡 O escribe "cancelar" para salir.`;
+    // Opción 1: Sí, enviar comprobante
+    if (opcion === 1) {
+      return `📸 *ENVIAR COMPROBANTE*\n\n` +
+             `Por favor envía una *foto* de tu ticket de OXXO.\n\n` +
+             `📋 Referencia: ${usuario.pagoEnProceso.referencia}\n\n` +
+             `💡 Adjunta la imagen y envíala.`;
+    }
+
+    // Opción 2: Ver QR nuevamente
+    if (opcion === 2) {
+      const perfilNombre = usuario.pagoEnProceso.perfil === PERFILES.PREMIUM ? 'PREMIUM' : 'VIP';
+      let mensaje = `💳 *PAGO ${perfilNombre} - OXXO*\n\n`;
+      mensaje += `Escanea el siguiente código QR:\n`;
+      mensaje += `[QR ${perfilNombre}]\n\n`;
+      mensaje += `💰 Monto: $${usuario.pagoEnProceso.perfil === PERFILES.PREMIUM ? '10' : '100'} pesos\n\n`;
+      mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      mensaje += `Una vez que pagues, envía foto del ticket.\n\n`;
+      mensaje += `¿Ya realizaste el pago?\n\n`;
+      mensaje += `1️⃣ Sí, enviar comprobante\n`;
+      mensaje += `2️⃣ Ver QR nuevamente\n\n`;
+      mensaje += `0️⃣ Cancelar`;
+
+      return mensaje;
+    }
+
+    return `❌ Opción inválida.\n\n` +
+           `1️⃣ Sí, enviar comprobante\n` +
+           `2️⃣ Ver QR nuevamente\n` +
+           `0️⃣ Cancelar`;
   }
 
   return null;
