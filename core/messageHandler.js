@@ -22,6 +22,7 @@ import { manejarAdministrador } from '../perfiles/admin.js';
 import { manejarTecnico } from '../perfiles/dj.js';
 import { verificarUbicacion } from '../utils/ubicacion.js';
 import { filtrarContenido, obtenerMensajeRechazo } from '../utils/filtroContenido.js';
+import { tieneNotificacionPendiente, manejarRespuestaNotificacion } from './notifications.js';
 import { log } from '../utils/logger.js';
 
 /**
@@ -186,6 +187,15 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
 
       await enviarMensaje(sock, m.key.remoteJid, mensajeRechazo);
       return;
+    }
+
+    // Verificar si tiene notificación pendiente
+    if (tieneNotificacionPendiente(numero)) {
+      const respuestaNotificacion = await manejarRespuestaNotificacion(usuario, mensaje, estado, sock);
+      if (respuestaNotificacion) {
+        await enviarMensaje(sock, m.key.remoteJid, respuestaNotificacion);
+        return;
+      }
     }
 
     // Comandos globales

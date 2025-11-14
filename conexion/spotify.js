@@ -319,3 +319,188 @@ export async function obtenerRecomendaciones(trackId, limite = 10) {
     return [];
   }
 }
+
+/**
+ * Obtener estado actual de reproducción
+ */
+export async function obtenerReproduccionActual() {
+  try {
+    const token = await obtenerAccessToken();
+
+    const { data } = await axios.get(
+      'https://api.spotify.com/v1/me/player',
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    return data;
+  } catch (error) {
+    if (error.response?.status === 204) {
+      log('ℹ️ No hay dispositivo activo de reproducción', 'debug');
+      return null;
+    }
+    log(`❌ Error obteniendo estado de reproducción: ${error.message}`, 'error');
+    return null;
+  }
+}
+
+/**
+ * Pausar reproducción
+ */
+export async function pausarReproduccion() {
+  try {
+    const token = await obtenerAccessToken();
+
+    await axios.put(
+      'https://api.spotify.com/v1/me/player/pause',
+      null,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    log('⏸️ Reproducción pausada', 'info');
+    return true;
+  } catch (error) {
+    log(`❌ Error pausando reproducción: ${error.message}`, 'error');
+    return false;
+  }
+}
+
+/**
+ * Reanudar reproducción
+ */
+export async function reanudarReproduccion() {
+  try {
+    const token = await obtenerAccessToken();
+
+    await axios.put(
+      'https://api.spotify.com/v1/me/player/play',
+      null,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    log('▶️ Reproducción reanudada', 'info');
+    return true;
+  } catch (error) {
+    log(`❌ Error reanudando reproducción: ${error.message}`, 'error');
+    return false;
+  }
+}
+
+/**
+ * Saltar a la siguiente canción
+ */
+export async function siguienteCancion() {
+  try {
+    const token = await obtenerAccessToken();
+
+    await axios.post(
+      'https://api.spotify.com/v1/me/player/next',
+      null,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    log('⏭️ Saltando a siguiente canción', 'info');
+    return true;
+  } catch (error) {
+    log(`❌ Error saltando canción: ${error.message}`, 'error');
+    return false;
+  }
+}
+
+/**
+ * Volver a la canción anterior
+ */
+export async function cancionAnterior() {
+  try {
+    const token = await obtenerAccessToken();
+
+    await axios.post(
+      'https://api.spotify.com/v1/me/player/previous',
+      null,
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    log('⏮️ Volviendo a canción anterior', 'info');
+    return true;
+  } catch (error) {
+    log(`❌ Error volviendo a canción anterior: ${error.message}`, 'error');
+    return false;
+  }
+}
+
+/**
+ * Ajustar volumen
+ * @param {number} volumen - Volumen de 0 a 100
+ */
+export async function ajustarVolumen(volumen) {
+  try {
+    const token = await obtenerAccessToken();
+
+    // Validar rango
+    const volumenAjustado = Math.max(0, Math.min(100, volumen));
+
+    await axios.put(
+      'https://api.spotify.com/v1/me/player/volume',
+      null,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { volume_percent: volumenAjustado }
+      }
+    );
+
+    log(`🔊 Volumen ajustado a ${volumenAjustado}%`, 'info');
+    return true;
+  } catch (error) {
+    log(`❌ Error ajustando volumen: ${error.message}`, 'error');
+    return false;
+  }
+}
+
+/**
+ * Subir volumen (incremento de 10%)
+ */
+export async function subirVolumen() {
+  try {
+    const estado = await obtenerReproduccionActual();
+    if (!estado || !estado.device) {
+      return false;
+    }
+
+    const volumenActual = estado.device.volume_percent || 50;
+    const nuevoVolumen = Math.min(100, volumenActual + 10);
+
+    return await ajustarVolumen(nuevoVolumen);
+  } catch (error) {
+    log(`❌ Error subiendo volumen: ${error.message}`, 'error');
+    return false;
+  }
+}
+
+/**
+ * Bajar volumen (decremento de 10%)
+ */
+export async function bajarVolumen() {
+  try {
+    const estado = await obtenerReproduccionActual();
+    if (!estado || !estado.device) {
+      return false;
+    }
+
+    const volumenActual = estado.device.volume_percent || 50;
+    const nuevoVolumen = Math.max(0, volumenActual - 10);
+
+    return await ajustarVolumen(nuevoVolumen);
+  } catch (error) {
+    log(`❌ Error bajando volumen: ${error.message}`, 'error');
+    return false;
+  }
+}

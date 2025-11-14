@@ -42,18 +42,21 @@ export async function manejarUsuarioNormal(usuario, mensaje, estado) {
         return obtenerMenuArtista();
 
       case 3:
+        return await mostrarProximas5Canciones();
+
+      case 4:
         if (perfil.puedeVerCola) {
           return await mostrarCola();
         }
         return '❌ Esta opción no está disponible para tu perfil.';
 
-      case 4:
+      case 5:
         if (perfil.puedeVerEstadisticas) {
           return mostrarEstadisticasUsuario(usuario);
         }
         return '❌ Esta opción no está disponible para tu perfil.';
 
-      case 5:
+      case 6:
         if (perfil.puedeVerEstadisticas) {
           const { obtenerResumenPerfil } = await import('../core/profiles.js');
           return obtenerResumenPerfil(usuario);
@@ -330,4 +333,73 @@ function mostrarEstadisticasUsuario(usuario) {
   mensaje += `\n━━━━━━━━━━━━━━━━━━━━━`;
 
   return mensaje;
+}
+
+/**
+ * Mostrar próximas 5 canciones en la cola
+ */
+async function mostrarProximas5Canciones() {
+  try {
+    const playlist = await obtenerPlaylist();
+
+    if (playlist.length === 0) {
+      return '📜 *PRÓXIMAS CANCIONES*\n\n' +
+             '🎵 La cola está vacía.\n\n' +
+             '💡 ¡Sé el primero en agregar una canción!';
+    }
+
+    let mensaje = `📜 *PRÓXIMAS 5 CANCIONES*\n\n`;
+
+    const mostrar = Math.min(playlist.length, 5);
+    let tiempoAcumulado = 0;
+
+    for (let i = 0; i < mostrar; i++) {
+      const track = playlist[i].track;
+      const artistas = track.artists.map(a => a.name).join(', ');
+      const duracion = formatearDuracion(track.duration_ms);
+
+      // Calcular tiempo estimado
+      const minutos = Math.floor(tiempoAcumulado / 60000);
+      const segundos = Math.floor((tiempoAcumulado % 60000) / 1000);
+
+      if (i === 0) {
+        mensaje += `▶️ *SONANDO AHORA*\n`;
+      } else {
+        mensaje += `${i + 1}. `;
+      }
+
+      mensaje += `*${track.name}*\n`;
+      mensaje += `   🎤 ${artistas}\n`;
+      mensaje += `   ⏱️ Duración: ${duracion}\n`;
+
+      if (i > 0) {
+        mensaje += `   ⏰ Sonará en: ${minutos}m ${segundos}s\n`;
+      }
+
+      mensaje += `\n`;
+
+      tiempoAcumulado += track.duration_ms;
+    }
+
+    if (playlist.length > 5) {
+      mensaje += `... y ${playlist.length - 5} canciones más en cola\n\n`;
+    }
+
+    mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    mensaje += `💡 Usa esta información para decidir cuándo pedir tu canción.`;
+
+    return mensaje;
+  } catch (error) {
+    log(`❌ Error mostrando próximas canciones: ${error.message}`, 'error');
+    return '❌ Error obteniendo las próximas canciones.';
+  }
+}
+
+/**
+ * Formatear duración (helper para mostrarProximas5Canciones)
+ */
+function formatearDuracion(ms) {
+  const minutos = Math.floor(ms / 60000);
+  const segundos = Math.floor((ms % 60000) / 1000);
+  return `${minutos}:${segundos.toString().padStart(2, '0')}`;
 }

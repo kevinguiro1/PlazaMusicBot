@@ -7,6 +7,7 @@ import { procesarMensaje } from './core/messageHandler.js';
 import { cargarDatos, guardarDatos } from './core/dataManager.js';
 import { iniciarSistemaSeguridad } from './core/security.js';
 import { iniciarMonitoreo } from './core/monitoring.js';
+import { iniciarMonitorNotificaciones } from './core/notifications.js';
 import { log } from './utils/logger.js';
 
 // Estado global de la aplicación
@@ -50,6 +51,9 @@ async function main() {
     );
 
     estado.bots['bot-principal'] = sock;
+
+    // Iniciar sistema de notificaciones
+    iniciarMonitorNotificaciones(estado, sock);
 
     log('✅ PlazaMusicBot iniciado exitosamente!', 'success');
     log(`📊 Usuarios registrados: ${Object.keys(estado.usuarios).length}`, 'info');

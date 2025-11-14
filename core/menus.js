@@ -20,21 +20,22 @@ export function obtenerMenuPrincipal(usuario) {
   // Opciones básicas para todos
   menu += `1️⃣ 🎵 Pedir canción\n`;
   menu += `2️⃣ 🎤 Buscar por artista\n`;
+  menu += `3️⃣ 📜 Ver próximas 5 canciones\n`;
 
   // Opciones premium+
   if (perfil.puedeVerCola) {
-    menu += `3️⃣ 📜 Ver cola de reproducción\n`;
+    menu += `4️⃣ 📜 Ver cola completa\n`;
   }
 
   // Opciones VIP+
   if (perfil.puedeVerEstadisticas) {
-    menu += `4️⃣ 📊 Ver estadísticas\n`;
-    menu += `5️⃣ 👤 Mi perfil\n`;
+    menu += `5️⃣ 📊 Ver estadísticas\n`;
+    menu += `6️⃣ 👤 Mi perfil\n`;
   }
 
   // Opciones DJ
   if (usuario.perfil === PERFILES.TECNICO) {
-    menu += `6️⃣ 🎧 Panel Técnico\n`;
+    menu += `7️⃣ 🎧 Panel Técnico\n`;
   }
 
   // Opciones Admin
@@ -106,13 +107,20 @@ export function obtenerMenuResultados(canciones, usuario) {
 export function obtenerMenuTecnico() {
   return `🎧 *PANEL TÉCNICO*\n\n` +
          `━━━━━━━━━━━━━━━━━━━━━\n` +
-         `1️⃣ 📜 Ver cola completa\n` +
-         `2️⃣ ⏭️ Saltar canción actual\n` +
-         `3️⃣ 🗑️ Eliminar canción de cola\n` +
-         `4️⃣ 🔄 Reordenar cola\n` +
-         `5️⃣ 📊 Ver estadísticas en vivo\n` +
-         `6️⃣ 🎵 Agregar canción prioritaria\n` +
-         `7️⃣ 🧹 Limpiar playlist\n` +
+         `*CONTROLES DE AUDIO*\n` +
+         `1️⃣ ⏸️ Pausar/Reanudar\n` +
+         `2️⃣ 🔊 Subir volumen\n` +
+         `3️⃣ 🔉 Bajar volumen\n` +
+         `4️⃣ ⏭️ Siguiente canción\n` +
+         `5️⃣ ⏮️ Canción anterior\n\n` +
+         `*GESTIÓN DE COLA*\n` +
+         `6️⃣ 📜 Ver cola completa\n` +
+         `7️⃣ 🗑️ Eliminar canción de cola\n` +
+         `8️⃣ 🎵 Agregar canción prioritaria\n` +
+         `9️⃣ 🧹 Limpiar playlist\n\n` +
+         `*INFORMACIÓN*\n` +
+         `🔟 📊 Ver estadísticas en vivo\n` +
+         `1️⃣1️⃣ ℹ️ Estado de reproducción\n\n` +
          `0️⃣ ⬅️ Volver\n\n` +
          `━━━━━━━━━━━━━━━━━━━━━\n` +
          `📝 Selecciona una opción`;
