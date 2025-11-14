@@ -18,6 +18,7 @@ import {
   obtenerMenuFAQ
 } from './menus.js';
 import { manejarUsuarioNormal } from '../perfiles/usuario.js';
+import { manejarUsuarioVIP } from '../perfiles/vip.js';
 import { manejarAdministrador } from '../perfiles/admin.js';
 import { manejarTecnico } from '../perfiles/dj.js';
 import { verificarUbicacion } from '../utils/ubicacion.js';
@@ -269,7 +270,7 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
     // Enrutar según perfil
     let respuesta;
 
-    if (usuario.perfil === PERFILES.ADMINISTRADOR || usuario.perfil === PERFILES.ADMINISTRADOR) {
+    if (usuario.perfil === PERFILES.ADMINISTRADOR) {
       // Admins tienen acceso a comandos de admin + funcionalidad normal
       if (mensaje.startsWith('/')) {
         respuesta = await manejarAdministrador(usuario, mensaje, estado);
@@ -278,7 +279,10 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
       }
     } else if (usuario.perfil === PERFILES.TECNICO) {
       respuesta = await manejarTecnico(usuario, mensaje, estado);
+    } else if (usuario.perfil === PERFILES.VIP) {
+      respuesta = await manejarUsuarioVIP(usuario, mensaje, estado);
     } else {
+      // Normal y Premium
       respuesta = await manejarUsuarioNormal(usuario, mensaje, estado);
     }
 

@@ -17,19 +17,31 @@ export function obtenerMenuPrincipal(usuario) {
   menu += `📋 *MENÚ PRINCIPAL*\n`;
   menu += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  // Menú simplificado para usuarios normales
-  if (usuario.perfil === PERFILES.NORMAL || usuario.perfil === PERFILES.PREMIUM || usuario.perfil === PERFILES.VIP) {
+  // Menú para usuarios NORMAL
+  if (usuario.perfil === PERFILES.NORMAL) {
     const disponibles = perfil.limiteCanciones - (usuario.cancionesPedidasHoy || 0);
     menu += `1️⃣ 🎵 Pedir canción (${disponibles}/${perfil.limiteCanciones} disponibles hoy)\n`;
     menu += `2️⃣ 📊 Ver cola y tiempos\n`;
-
-    // Solo mostrar upgrade si no es VIP
-    if (usuario.perfil !== PERFILES.VIP) {
-      menu += `3️⃣ 💎 Hacerme Premium/VIP\n`;
-    }
-
+    menu += `3️⃣ 💎 Hacerme Premium/VIP\n`;
     menu += `4️⃣ 📜 Ver letra actual\n`;
     menu += `\n0️⃣ 🚪 Salir\n`;
+  }
+  // Menú para usuarios PREMIUM
+  else if (usuario.perfil === PERFILES.PREMIUM) {
+    const disponibles = perfil.limiteCanciones - (usuario.cancionesPedidasHoy || 0);
+    menu += `⭐ MENÚ PREMIUM\n\n`;
+    menu += `Hola ${usuario.nombre}. Tienes acceso Premium.\n`;
+    menu += `Canciones disponibles hoy: ${usuario.cancionesPedidasHoy || 0}/${perfil.limiteCanciones}\n\n`;
+    menu += `1️⃣ 🎵 Pedir canción\n`;
+    menu += `2️⃣ 📊 Ver cola y tiempos\n`;
+    menu += `3️⃣ 👑 Actualizar a VIP\n`;
+    menu += `4️⃣ 📜 Ver letra actual\n`;
+    menu += `5️⃣ 💳 Gestionar mi membresía\n`;
+    menu += `\n0️⃣ 🚪 Salir\n`;
+  }
+  // Menú para usuarios VIP (usar menú VIP dedicado)
+  else if (usuario.perfil === PERFILES.VIP) {
+    return obtenerMenuVIP(usuario);
   }
   // Menú para Técnico
   else if (usuario.perfil === PERFILES.TECNICO) {
@@ -458,4 +470,263 @@ export function obtenerMensajeUbicacionRechazada(nombre) {
          `Lo siento ${nombre}, parece que no estás en la plaza.\n\n` +
          `Este bot solo funciona para personas que están físicamente en la plaza.\n\n` +
          `📍 Acércate a la plaza e intenta nuevamente.`;
+}
+
+/**
+ * Menú de gestión de membresía Premium
+ */
+export function obtenerMenuGestionarMembresia(usuario) {
+  const perfil = CONFIG_PERFILES[usuario.perfil];
+  const fechaRegistro = new Date(usuario.fechaRegistro);
+  const fechaFin = new Date(fechaRegistro);
+  fechaFin.setMonth(fechaFin.getMonth() + 1); // Membresía de 1 mes
+
+  const disponibles = perfil.limiteCanciones - (usuario.cancionesPedidasHoy || 0);
+
+  let mensaje = `💳 *TU MEMBRESÍA PREMIUM*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `Estado: ✅ Activa\n`;
+  mensaje += `Vigencia: ${fechaFin.toLocaleDateString()}\n`;
+  mensaje += `Canciones por día: ${perfil.limiteCanciones}\n`;
+  mensaje += `Usadas hoy: ${usuario.cancionesPedidasHoy || 0}\n`;
+  mensaje += `Disponibles: ${disponibles}\n`;
+  mensaje += `Saldo pendiente: $0\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `1️⃣ Ver beneficios Premium\n`;
+  mensaje += `2️⃣ Renovar Premium\n`;
+  mensaje += `3️⃣ Ver QR de pago\n`;
+  mensaje += `4️⃣ Cancelar membresía\n\n`;
+  mensaje += `0️⃣ Volver\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  mensaje += `💡 Escribe el número`;
+
+  return mensaje;
+}
+
+/**
+ * Menú de beneficios Premium
+ */
+export function obtenerMenuBeneficiosPremium() {
+  let mensaje = `⭐ *BENEFICIOS PREMIUM*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `✅ 3 canciones por día\n`;
+  mensaje += `✅ Pedir música sin estar en la plaza\n`;
+  mensaje += `✅ Ver cola de reproducción completa\n`;
+  mensaje += `✅ Búsqueda avanzada por artista\n`;
+  mensaje += `✅ Sin cooldown entre canciones\n`;
+  mensaje += `✅ Notificaciones personalizadas\n`;
+  mensaje += `✅ Soporte prioritario\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `💰 *PRECIO:* $10 pesos\n`;
+  mensaje += `📅 *DURACIÓN:* 30 días\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `💎 *¿QUIERES MÁS?*\n\n`;
+  mensaje += `Actualiza a *VIP* y obtén:\n`;
+  mensaje += `👑 1 canción exclusiva por día\n`;
+  mensaje += `🚀 Prioridad máxima en la cola\n`;
+  mensaje += `📊 Estadísticas avanzadas\n`;
+  mensaje += `🎵 Tu música suena primero\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `0️⃣ Volver`;
+
+  return mensaje;
+}
+
+/**
+ * Menú de renovación Premium
+ */
+export function obtenerMenuRenovarPremium(usuario) {
+  const fechaRegistro = new Date(usuario.fechaRegistro);
+  const fechaFin = new Date(fechaRegistro);
+  fechaFin.setMonth(fechaFin.getMonth() + 1);
+
+  const diasRestantes = Math.ceil((fechaFin - new Date()) / (1000 * 60 * 60 * 24));
+
+  let mensaje = `🔄 *RENOVAR PREMIUM*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `Tu membresía actual:\n`;
+  mensaje += `📅 Vence: ${fechaFin.toLocaleDateString()}\n`;
+  mensaje += `⏰ Días restantes: ${diasRestantes}\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `💰 Renovación: $10 pesos\n`;
+  mensaje += `📅 Duración: 30 días adicionales\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `¿Cómo quieres renovar?\n\n`;
+  mensaje += `1️⃣ Pagar con OXXO\n`;
+  mensaje += `2️⃣ Ver otros métodos\n\n`;
+  mensaje += `0️⃣ Cancelar\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  mensaje += `💡 La renovación se suma a tu tiempo actual`;
+
+  return mensaje;
+}
+
+/**
+ * Menú de cancelación de membresía
+ */
+export function obtenerMenuCancelarMembresia(usuario) {
+  const fechaRegistro = new Date(usuario.fechaRegistro);
+  const fechaFin = new Date(fechaRegistro);
+  fechaFin.setMonth(fechaFin.getMonth() + 1);
+
+  let mensaje = `⚠️ *CANCELAR MEMBRESÍA*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `Si cancelas tu membresía Premium:\n\n`;
+  mensaje += `❌ Perderás acceso a 3 canciones/día\n`;
+  mensaje += `❌ No podrás pedir música fuera de la plaza\n`;
+  mensaje += `❌ Perderás acceso a búsqueda avanzada\n`;
+  mensaje += `❌ No verás la cola completa\n`;
+  mensaje += `❌ Volverás a tener cooldown\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `📅 Tu membresía actual vence: ${fechaFin.toLocaleDateString()}\n\n`;
+  mensaje += `💡 Si cancelas ahora, mantendrás tus beneficios hasta la fecha de vencimiento.\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `¿Estás seguro que quieres cancelar?\n\n`;
+  mensaje += `1️⃣ Sí, cancelar membresía\n`;
+  mensaje += `2️⃣ No, mantener Premium\n\n`;
+  mensaje += `0️⃣ Volver\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  mensaje += `⚠️ Esta acción no se puede deshacer`;
+
+  return mensaje;
+}
+
+/**
+ * Menú principal VIP
+ */
+export function obtenerMenuVIP(usuario) {
+  let mensaje = `👑 *MENÚ VIP*\n\n`;
+  mensaje += `Hola ${usuario.nombre}. Bienvenido usuario VIP.\n\n`;
+  mensaje += `Tus beneficios:\n`;
+  mensaje += `• Canciones inmediatas\n`;
+  mensaje += `• No requiere ubicación\n`;
+  mensaje += `• Avisos especiales\n`;
+  mensaje += `• 1 canción por hora\n`;
+  mensaje += `• Permite música exclusiva\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `1️⃣ 🎵 Pedir canción VIP\n`;
+  mensaje += `2️⃣ 📊 Ver cola y tiempos\n`;
+  mensaje += `3️⃣ 📜 Ver letra de la canción actual\n`;
+  mensaje += `4️⃣ 💎 Comprar otra canción VIP\n`;
+  mensaje += `5️⃣ 👑 Mis privilegios VIP\n\n`;
+  mensaje += `0️⃣ 🚪 Salir\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  mensaje += `💡 Elige una opción:`;
+
+  return mensaje;
+}
+
+/**
+ * Menú de compra de canción VIP adicional
+ */
+export function obtenerMenuCompraVIP() {
+  let mensaje = `🎶 *COMPRA DE CANCIÓN VIP — $100*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `1️⃣ Ver código QR de pago\n`;
+  mensaje += `2️⃣ ¿Cómo funciona la compra VIP?\n`;
+  mensaje += `3️⃣ Volver\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  mensaje += `💡 Elige una opción:`;
+
+  return mensaje;
+}
+
+/**
+ * Menú de información de compra VIP
+ */
+export function obtenerMenuInfoCompraVIP() {
+  let mensaje = `📘 *¿CÓMO FUNCIONA?*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `• Cada canción VIP cuesta $100\n`;
+  mensaje += `• Va primero en la cola, después de la canción actual\n`;
+  mensaje += `• Puedes comprar varias al día\n`;
+  mensaje += `• Cada compra requiere comprobante\n`;
+  mensaje += `• No necesitas estar dentro de la plaza\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `0️⃣ Volver`;
+
+  return mensaje;
+}
+
+/**
+ * Menú de privilegios VIP
+ */
+export function obtenerMenuPrivilegiosVIP() {
+  let mensaje = `👑 *TUS PRIVILEGIOS VIP*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `• Prioridad máxima\n`;
+  mensaje += `• No requiere ubicación\n`;
+  mensaje += `• Canciones inmediatas\n`;
+  mensaje += `• Letra disponible siempre que Spotify la tenga\n`;
+  mensaje += `• Filtros flexibles (puede escuchar más géneros)\n`;
+  mensaje += `• Tiempos reducidos\n`;
+  mensaje += `• Acceso anticipado a nuevas funciones\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `1️⃣ Ver beneficios completos\n`;
+  mensaje += `2️⃣ Ver historial VIP\n`;
+  mensaje += `3️⃣ Solicitar soporte directo con administrador\n\n`;
+  mensaje += `0️⃣ Volver\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  mensaje += `💡 Elige una opción:`;
+
+  return mensaje;
+}
+
+/**
+ * Menú de beneficios completos VIP
+ */
+export function obtenerMenuBeneficiosVIP() {
+  let mensaje = `⭐ *BENEFICIOS COMPLETOS VIP*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `• Saltas la cola de todos\n`;
+  mensaje += `• No requieres ubicación\n`;
+  mensaje += `• 1 canción por hora incluida\n`;
+  mensaje += `• Canciones adicionales compradas por QR\n`;
+  mensaje += `• Acceso a música exclusiva\n`;
+  mensaje += `• Estadísticas personalizadas\n`;
+  mensaje += `• Notificaciones prioritarias\n`;
+  mensaje += `• Soporte directo con administrador\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `0️⃣ Volver`;
+
+  return mensaje;
+}
+
+/**
+ * Menú de historial VIP
+ */
+export function obtenerMenuHistorialVIP(usuario) {
+  const cancionesCompradas = usuario.estadisticas?.cancionesVIPCompradas || 0;
+  const ultimaCompra = usuario.estadisticas?.ultimaCompraVIP || 'N/A';
+  const ultimaCancion = usuario.estadisticas?.ultimaCancionVIP || 'N/A';
+  const canceladasPorUsuario = usuario.estadisticas?.cancionesCanceladas || 0;
+
+  let mensaje = `📄 *HISTORIAL VIP*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `• Canciones compradas: ${cancionesCompradas}\n`;
+  mensaje += `• Última compra: ${ultimaCompra}\n`;
+  mensaje += `• Última canción agregada: ${ultimaCancion}\n`;
+  mensaje += `• Veces que tus canciones fueron canceladas por ti: ${canceladasPorUsuario}\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `0️⃣ Volver`;
+
+  return mensaje;
+}
+
+/**
+ * Mensaje de cooldown VIP
+ */
+export function obtenerMensajeCooldownVIP(minutosRestantes) {
+  let mensaje = `⏳ *COOLDOWN ACTIVO*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `Solo puedes poner 1 canción por hora.\n\n`;
+  mensaje += `Faltan ${minutosRestantes} minutos para volver a pedir.\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `💡 Mientras esperas:\n`;
+  mensaje += `• Puedes ver la cola (opción 2)\n`;
+  mensaje += `• Ver letra actual (opción 3)\n`;
+  mensaje += `• Comprar canción adicional (opción 4)\n\n`;
+  mensaje += `0️⃣ Volver`;
+
+  return mensaje;
 }

@@ -12,7 +12,11 @@ import {
   obtenerMenuResultados,
   obtenerMenuConfirmacion,
   obtenerMenuColaYTiempos,
-  obtenerMenuLetraActual
+  obtenerMenuLetraActual,
+  obtenerMenuGestionarMembresia,
+  obtenerMenuBeneficiosPremium,
+  obtenerMenuRenovarPremium,
+  obtenerMenuCancelarMembresia
 } from '../core/menus.js';
 import {
   buscarCancionEnSpotify,
@@ -59,6 +63,14 @@ export async function manejarUsuarioNormal(usuario, mensaje, estado) {
       case 4:
         // Ver letra actual
         return await mostrarLetraActual();
+
+      case 5:
+        // Gestionar membresía (solo Premium)
+        if (usuario.perfil === 'premium') {
+          usuario.contexto = 'gestionar_membresia';
+          return obtenerMenuGestionarMembresia(usuario);
+        }
+        return '❌ Opción inválida.\n\n' + obtenerMenuPrincipal(usuario);
 
       case 0:
         return `👋 Hasta pronto ${usuario.nombre}!\n\nEscribe "menu" cuando quieras volver.`;
@@ -115,6 +127,19 @@ export async function manejarUsuarioNormal(usuario, mensaje, estado) {
 
   if (usuario.contexto === 'confirmar_cancion') {
     return await confirmarCancion(usuario, texto, estado);
+  }
+
+  // Gestionar membresía Premium
+  if (usuario.contexto === 'gestionar_membresia') {
+    return await manejarGestionMembresia(usuario, texto, estado);
+  }
+
+  if (usuario.contexto === 'renovar_premium') {
+    return await manejarRenovacionPremium(usuario, texto, estado);
+  }
+
+  if (usuario.contexto === 'cancelar_membresia') {
+    return await manejarCancelacionMembresia(usuario, texto, estado);
   }
 
   // Por defecto, mostrar menú
@@ -494,5 +519,172 @@ async function mostrarLetraActual() {
   } catch (error) {
     log(`❌ Error mostrando letra: ${error.message}`, 'error');
     return '❌ Error obteniendo la letra.';
+  }
+}
+
+/**
+ * Manejar menú de gestión de membresía
+ */
+async function manejarGestionMembresia(usuario, texto, estado) {
+  const opcion = parseInt(texto);
+
+  if (opcion === 0 || texto.toLowerCase() === 'volver') {
+    usuario.contexto = null;
+    return obtenerMenuPrincipal(usuario);
+  }
+
+  switch (opcion) {
+    case 1:
+      // Ver beneficios Premium
+      return obtenerMenuBeneficiosPremium();
+
+    case 2:
+      // Renovar Premium
+      usuario.contexto = 'renovar_premium';
+      return obtenerMenuRenovarPremium(usuario);
+
+    case 3:
+      // Ver QR de pago
+      return await mostrarQRPagoActual(usuario);
+
+    case 4:
+      // Cancelar membresía
+      usuario.contexto = 'cancelar_membresia';
+      return obtenerMenuCancelarMembresia(usuario);
+
+    default:
+      return '❌ Opción inválida.\n\n' + obtenerMenuGestionarMembresia(usuario);
+  }
+}
+
+/**
+ * Manejar renovación Premium
+ */
+async function manejarRenovacionPremium(usuario, texto, estado) {
+  const opcion = parseInt(texto);
+
+  if (opcion === 0 || texto.toLowerCase() === 'cancelar') {
+    usuario.contexto = 'gestionar_membresia';
+    return obtenerMenuGestionarMembresia(usuario);
+  }
+
+  if (opcion === 1) {
+    // Pagar con OXXO - generar pago
+    try {
+      const { generarPagoOXXO } = await import('../core/payments.js');
+      const { PERFILES } = await import('../core/profiles.js');
+
+      const datosPago = await generarPagoOXXO(usuario, PERFILES.PREMIUM);
+
+      usuario.contexto = 'upgrade_esperando_comprobante';
+      usuario.pagoEnProceso = {
+        perfil: PERFILES.PREMIUM,
+        referencia: datosPago.referencia,
+        tipo: 'OXXO',
+        esRenovacion: true
+      };
+
+      let mensaje = `💳 *RENOVACIÓN PREMIUM - OXXO*\n\n`;
+      mensaje += `Escanea el siguiente código QR:\n`;
+      mensaje += `[QR RENOVACIÓN PREMIUM]\n\n`;
+      mensaje += `💰 Monto: $${datosPago.monto} pesos\n\n`;
+      mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      mensaje += `Una vez que pagues, envía foto del ticket.\n\n`;
+      mensaje += `¿Ya realizaste el pago?\n\n`;
+      mensaje += `1️⃣ Sí, enviar comprobante\n`;
+      mensaje += `2️⃣ Ver QR nuevamente\n\n`;
+      mensaje += `0️⃣ Cancelar`;
+
+      return mensaje;
+    } catch (error) {
+      log(`❌ Error generando renovación: ${error.message}`, 'error');
+      usuario.contexto = 'gestionar_membresia';
+      return `❌ Error generando el pago. Intenta nuevamente.\n\n` +
+             obtenerMenuGestionarMembresia(usuario);
+    }
+  }
+
+  if (opcion === 2) {
+    // Ver otros métodos
+    const { obtenerMenuMetodosPago } = await import('../core/menus.js');
+    return obtenerMenuMetodosPago();
+  }
+
+  return '❌ Opción inválida.\n\n' + obtenerMenuRenovarPremium(usuario);
+}
+
+/**
+ * Manejar cancelación de membresía
+ */
+async function manejarCancelacionMembresia(usuario, texto, estado) {
+  const opcion = parseInt(texto);
+
+  if (opcion === 0 || texto.toLowerCase() === 'volver') {
+    usuario.contexto = 'gestionar_membresia';
+    return obtenerMenuGestionarMembresia(usuario);
+  }
+
+  if (opcion === 2) {
+    // No, mantener Premium
+    usuario.contexto = null;
+    return `✅ *MEMBRESÍA MANTENIDA*\n\n` +
+           `Tu membresía Premium sigue activa.\n\n` +
+           `¡Gracias por seguir con nosotros! 🎵\n\n` +
+           `💡 Escribe "menu" para continuar.`;
+  }
+
+  if (opcion === 1) {
+    // Sí, cancelar membresía
+    const { promoverUsuario, PERFILES } = await import('../core/profiles.js');
+
+    const fechaRegistro = new Date(usuario.fechaRegistro);
+    const fechaFin = new Date(fechaRegistro);
+    fechaFin.setMonth(fechaFin.getMonth() + 1);
+
+    // Degradar a usuario normal
+    promoverUsuario(usuario, PERFILES.NORMAL);
+
+    usuario.contexto = null;
+
+    log(`⚠️ Usuario ${usuario.nombre} canceló su membresía Premium`, 'warn');
+
+    return `✅ *MEMBRESÍA CANCELADA*\n\n` +
+           `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+           `Tu membresía Premium ha sido cancelada.\n\n` +
+           `Tus beneficios estuvieron activos hasta: ${fechaFin.toLocaleDateString()}\n\n` +
+           `Ahora tienes perfil *Normal* con:\n` +
+           `• 3 canciones por día\n` +
+           `• Requiere estar en la plaza\n\n` +
+           `━━━━━━━━━━━━━━━━━━━━━\n\n` +
+           `💡 Puedes volver a Premium cuando quieras.\n\n` +
+           `Escribe "menu" para continuar.`;
+  }
+
+  return '❌ Opción inválida.\n\n' + obtenerMenuCancelarMembresia(usuario);
+}
+
+/**
+ * Mostrar QR de pago actual (si existe un pago en proceso)
+ */
+async function mostrarQRPagoActual(usuario) {
+  if (usuario.pagoEnProceso && usuario.pagoEnProceso.referencia) {
+    const perfilNombre = usuario.pagoEnProceso.perfil === 'premium' ? 'PREMIUM' : 'VIP';
+    const monto = usuario.pagoEnProceso.perfil === 'premium' ? '10' : '100';
+
+    let mensaje = `💳 *PAGO ${perfilNombre} - OXXO*\n\n`;
+    mensaje += `Escanea el siguiente código QR:\n`;
+    mensaje += `[QR ${perfilNombre}]\n\n`;
+    mensaje += `💰 Monto: $${monto} pesos\n`;
+    mensaje += `📋 Referencia: ${usuario.pagoEnProceso.referencia}\n\n`;
+    mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    mensaje += `Una vez que pagues, envía foto del ticket.\n\n`;
+    mensaje += `0️⃣ Volver`;
+
+    return mensaje;
+  } else {
+    return `⚠️ *NO HAY PAGO PENDIENTE*\n\n` +
+           `No tienes ningún pago en proceso.\n\n` +
+           `💡 Inicia una renovación o upgrade para generar un código QR.\n\n` +
+           `0️⃣ Volver`;
   }
 }
