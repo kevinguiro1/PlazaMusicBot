@@ -212,7 +212,7 @@ export function obtenerMenuFAQ() {
          `• PREMIUM: 10 por día\n` +
          `• VIP: Ilimitadas\n\n` +
          `*¿Cómo me hago Premium/VIP?*\n` +
-         `Contacta a un administrador para más información.\n\n` +
+         `Escribe "upgrade" para ver las opciones de pago.\n\n` +
          `*¿Por qué no encuentro una canción?*\n` +
          `Algunas canciones pueden estar filtradas por contenido explícito o no estar disponibles en Spotify.\n\n` +
          `*¿Cuánto tarda en sonar mi canción?*\n` +
@@ -221,6 +221,115 @@ export function obtenerMenuFAQ() {
          `Sí, si eres PREMIUM o superior.\n\n` +
          `━━━━━━━━━━━━━━━━━━━━━\n` +
          `💡 Escribe "menu" para volver`;
+}
+
+/**
+ * Menú de upgrade de perfil
+ */
+export function obtenerMenuUpgrade(usuario) {
+  let mensaje = `⭐ *MEJORA TU PERFIL*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `Tu perfil actual: ${obtenerPerfil(usuario).nombre}\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+  // Solo mostrar upgrades disponibles
+  if (usuario.perfil === PERFILES.NORMAL) {
+    mensaje += `⭐ *PREMIUM* - $10 MXN\n`;
+    mensaje += `• 10 canciones por día\n`;
+    mensaje += `• Ver cola completa\n`;
+    mensaje += `• Ver estadísticas\n`;
+    mensaje += `• Prioridad media\n\n`;
+
+    mensaje += `💎 *VIP* - $100 MXN\n`;
+    mensaje += `• 1 canción por hora\n`;
+    mensaje += `• Prioridad MÁXIMA\n`;
+    mensaje += `• Pedir desde cualquier lugar\n`;
+    mensaje += `• Estadísticas avanzadas\n`;
+    mensaje += `• No puedes cancelar (garantizado)\n\n`;
+  } else if (usuario.perfil === PERFILES.PREMIUM) {
+    mensaje += `💎 *VIP* - $100 MXN\n`;
+    mensaje += `• 1 canción por hora\n`;
+    mensaje += `• Prioridad MÁXIMA\n`;
+    mensaje += `• Pedir desde cualquier lugar\n`;
+    mensaje += `• Estadísticas avanzadas\n`;
+    mensaje += `• No puedes cancelar (garantizado)\n\n`;
+  }
+
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `*MÉTODOS DE PAGO*\n\n`;
+  mensaje += `1️⃣ Pago en OXXO\n`;
+  mensaje += `2️⃣ Transferencia SPEI\n\n`;
+  mensaje += `0️⃣ Volver\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  mensaje += `💡 Selecciona un método de pago`;
+
+  return mensaje;
+}
+
+/**
+ * Menú de selección de perfil para upgrade
+ */
+export function obtenerMenuSeleccionPerfil(usuario) {
+  let mensaje = `⭐ *SELECCIONA TU PERFIL*\n\n`;
+
+  if (usuario.perfil === PERFILES.NORMAL) {
+    mensaje += `1️⃣ PREMIUM - $10 MXN\n`;
+    mensaje += `2️⃣ VIP - $100 MXN\n\n`;
+  } else if (usuario.perfil === PERFILES.PREMIUM) {
+    mensaje += `1️⃣ VIP - $100 MXN\n\n`;
+  }
+
+  mensaje += `0️⃣ Cancelar\n\n`;
+  mensaje += `💡 Escribe el número`;
+
+  return mensaje;
+}
+
+/**
+ * Formatear información de pago OXXO
+ */
+export function formatearPagoOXXO(datosPago) {
+  let mensaje = `🏪 *PAGO EN OXXO*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `💰 Monto: $${datosPago.monto} MXN\n`;
+  mensaje += `📋 Referencia:\n*${datosPago.referencia}*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `*INSTRUCCIONES:*\n\n`;
+
+  datosPago.instrucciones.forEach((instruccion, index) => {
+    mensaje += `${instruccion}\n`;
+  });
+
+  mensaje += `\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `⏰ Válido por 24 horas\n\n`;
+  mensaje += `💡 Después de pagar, envía una foto de tu comprobante a este chat.`;
+
+  return mensaje;
+}
+
+/**
+ * Formatear información de pago SPEI
+ */
+export function formatearPagoSPEI(datosPago) {
+  let mensaje = `🏦 *TRANSFERENCIA SPEI*\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `💰 Monto: $${datosPago.monto} MXN\n`;
+  mensaje += `🏦 Banco: ${datosPago.banco}\n`;
+  mensaje += `👤 Beneficiario:\n${datosPago.beneficiario}\n\n`;
+  mensaje += `📋 CLABE:\n*${datosPago.clabe}*\n\n`;
+  mensaje += `📝 Concepto:\n${datosPago.referencia}\n\n`;
+  mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `*INSTRUCCIONES:*\n\n`;
+
+  datosPago.instrucciones.forEach((instruccion, index) => {
+    mensaje += `${instruccion}\n`;
+  });
+
+  mensaje += `\n━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  mensaje += `⏰ Válido por 24 horas\n\n`;
+  mensaje += `💡 Después de transferir, envía una foto de tu comprobante a este chat.`;
+
+  return mensaje;
 }
 
 /**

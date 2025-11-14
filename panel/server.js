@@ -301,6 +301,137 @@ app.post('/api/infracciones/:numero/desbloquear', async (req, res) => {
 });
 
 /**
+ * ENDPOINTS DE PAGOS
+ */
+
+// Obtener pagos pendientes de aprobación
+app.get('/api/pagos/pendientes', async (req, res) => {
+  try {
+    const { obtenerPagosPendientes } = await import('../core/payments.js');
+    const pendientes = obtenerPagosPendientes();
+
+    res.json({
+      exito: true,
+      pagos: pendientes,
+      total: pendientes.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      exito: false,
+      mensaje: `Error: ${error.message}`
+    });
+  }
+});
+
+// Obtener todos los pagos
+app.get('/api/pagos', async (req, res) => {
+  try {
+    const { obtenerTodosPagos } = await import('../core/payments.js');
+    const pagos = obtenerTodosPagos();
+
+    res.json({
+      exito: true,
+      pagos: pagos,
+      total: pagos.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      exito: false,
+      mensaje: `Error: ${error.message}`
+    });
+  }
+});
+
+// Obtener pagos de un usuario
+app.get('/api/pagos/usuario/:numero', async (req, res) => {
+  try {
+    const { numero } = req.params;
+    const { obtenerPagosUsuario } = await import('../core/payments.js');
+    const pagos = obtenerPagosUsuario(numero);
+
+    res.json({
+      exito: true,
+      pagos: pagos,
+      total: pagos.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      exito: false,
+      mensaje: `Error: ${error.message}`
+    });
+  }
+});
+
+// Aprobar pago
+app.post('/api/pagos/:referencia/aprobar', async (req, res) => {
+  try {
+    const { referencia } = req.params;
+
+    // Cargar estado para obtener el usuario
+    const estadoFile = path.join(DATA_DIR, 'estado.json');
+    const content = await fs.readFile(estadoFile, 'utf-8');
+    const estado = JSON.parse(content);
+
+    // Obtener datos del pago para encontrar al usuario
+    const { obtenerTodosPagos, aprobarPago } = await import('../core/payments.js');
+    const pagos = obtenerTodosPagos();
+    const pago = pagos.find(p => p.referencia === referencia);
+
+    if (!pago) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Pago no encontrado'
+      });
+    }
+
+    const usuario = estado.usuarios[pago.usuario];
+
+    if (!usuario) {
+      return res.status(404).json({
+        exito: false,
+        mensaje: 'Usuario no encontrado'
+      });
+    }
+
+    // Aprobar el pago
+    const resultado = aprobarPago(referencia, usuario);
+
+    if (resultado.exito) {
+      // Guardar estado actualizado
+      await fs.writeFile(estadoFile, JSON.stringify(estado, null, 2));
+
+      // Notificar al usuario (en producción se enviaría por WhatsApp)
+      console.log(`✅ Pago aprobado: ${referencia} - Usuario: ${usuario.nombre}`);
+    }
+
+    res.json(resultado);
+  } catch (error) {
+    res.status(500).json({
+      exito: false,
+      mensaje: `Error: ${error.message}`
+    });
+  }
+});
+
+// Rechazar pago
+app.post('/api/pagos/:referencia/rechazar', async (req, res) => {
+  try {
+    const { referencia } = req.params;
+    const { razon } = req.body;
+
+    const { rechazarPago } = await import('../core/payments.js');
+    const resultado = rechazarPago(referencia, razon || 'No especificada');
+
+    res.json(resultado);
+  } catch (error) {
+    res.status(500).json({
+      exito: false,
+      mensaje: `Error: ${error.message}`
+    });
+  }
+});
+
+/**
  * Helper: Actualizar valor en .env
  */
 function updateEnvValue(content, key, value) {

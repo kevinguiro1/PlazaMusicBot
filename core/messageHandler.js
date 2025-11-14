@@ -23,6 +23,7 @@ import { manejarTecnico } from '../perfiles/dj.js';
 import { verificarUbicacion } from '../utils/ubicacion.js';
 import { filtrarContenido, obtenerMensajeRechazo } from '../utils/filtroContenido.js';
 import { tieneNotificacionPendiente, manejarRespuestaNotificacion } from './notifications.js';
+import { manejarUpgrade, procesarComprobantePago, estaEnFlujoPago } from '../perfiles/payments-handler.js';
 import { log } from '../utils/logger.js';
 
 /**
@@ -36,14 +37,29 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
                     m.message?.extendedTextMessage?.text ||
                     '';
     const ubicacion = m.message?.locationMessage;
-    const tipoMensaje = ubicacion ? 'ubicacion' : 'texto';
+    const imagen = m.message?.imageMessage;
+    const tipoMensaje = ubicacion ? 'ubicacion' : (imagen ? 'imagen' : 'texto');
 
     // Log del mensaje
-    log(`📨 Mensaje de ${numero}: ${mensaje.substring(0, 50)}...`, 'debug');
+    log(`📨 Mensaje de ${numero}: ${tipoMensaje} - ${mensaje.substring(0, 50)}...`, 'debug');
+
+    // Verificar si el usuario existe (necesario para checar contexto de pago)
+    let usuario = estado.usuarios[numero];
+    const esperandoComprobante = usuario?.contexto === 'upgrade_esperando_comprobante';
 
     // Validar tipo de mensaje (rechazar fotos, videos, audios, reenvíos, etc.)
+    // EXCEPCIÓN: permitir imágenes si está esperando comprobante de pago
     const validacionTipo = sistemaSeguridad.validarTipoMensaje(m.message);
     if (!validacionTipo.valido) {
+      // Permitir imágenes solo si está esperando comprobante
+      if (imagen && esperandoComprobante) {
+        // Procesar comprobante de pago
+        const rutaImagen = `/tmp/comprobante_${numero}_${Date.now()}.jpg`; // Simulado
+        const respuesta = await procesarComprobantePago(usuario, rutaImagen);
+        await enviarMensaje(sock, m.key.remoteJid, respuesta);
+        return;
+      }
+
       if (validacionTipo.mensaje) {
         await enviarMensaje(sock, m.key.remoteJid, validacionTipo.mensaje);
       }
@@ -74,7 +90,7 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
       return;
     }
 
-    const usuario = estado.usuarios[numero];
+    usuario = estado.usuarios[numero];
 
     // Actualizar actividad
     resetearContadorDiario(usuario);
@@ -218,6 +234,12 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
       return;
     }
 
+    if (mensajeLower === 'upgrade' || mensajeLower === 'mejorar' || mensajeLower === 'premium' || mensajeLower === 'vip') {
+      const respuesta = await manejarUpgrade(usuario, 'inicio', estado);
+      await enviarMensaje(sock, m.key.remoteJid, respuesta);
+      return;
+    }
+
     if (mensajeLower === 'perfil' || mensajeLower === 'yo') {
       const { obtenerResumenPerfil } = await import('./profiles.js');
       await enviarMensaje(sock, m.key.remoteJid, obtenerResumenPerfil(usuario));
@@ -233,6 +255,15 @@ export async function procesarMensaje(sock, m, estado, sistemaSeguridad) {
         `👋 Hasta pronto ${usuario.nombre}!\n\nEscribe "menu" cuando quieras volver.`
       );
       return;
+    }
+
+    // Manejar flujo de pago si está activo
+    if (estaEnFlujoPago(usuario)) {
+      const respuesta = await manejarUpgrade(usuario, mensaje, estado);
+      if (respuesta) {
+        await enviarMensaje(sock, m.key.remoteJid, respuesta);
+        return;
+      }
     }
 
     // Enrutar según perfil
